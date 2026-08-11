@@ -71,9 +71,6 @@ The project aims to reduce dependency on traditional intermediaries while provid
 
 ---
 
-
----
-
 # 🛠️ Tech Stack
 
 ## Frontend
@@ -110,11 +107,6 @@ The project aims to reduce dependency on traditional intermediaries while provid
 - GitHub
 - Postman
 - VS Code
-
----
-
-# 📂 Project Structure
-
 
 ---
 
