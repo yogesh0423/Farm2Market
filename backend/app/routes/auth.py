@@ -8,27 +8,58 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    
-    # Extract fields sent by your frontend form
-    full_name = data.get('fullName') or data.get('full_name')
-    email = data.get('email')
-    password = data.get('password')
-    phone = data.get('phone')
-    location = data.get('location')
-    role = data.get('role', 'buyer') # default role
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No input data provided"}), 400
+        
+        # Extract fields sent by your frontend form
+        full_name = data.get('fullName') or data.get('full_name') or data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+        phone = data.get('phone')
+        location = data.get('location')
+        role = data.get('role', 'buyer') # default role
+        
+        if not email or not password or not full_name:
+            return jsonify({"error": "Full name, email, and password are required"}), 400
 
-    # Check if user already exists...
-    # Save user with phone, location, and full_name into your database
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "Email already registered"}), 400
 
-    return jsonify({"message": "User registered successfully"}), 201
-@auth_bp.route('/login', methods=['POST'])
-@auth_bp.route('/login', methods=['POST'])
+        # Create new user instance (note: your User model uses 'name' field)
+        new_user = User(
+            name=full_name,
+            email=email,
+            role=role,
+            phone=phone,
+            location=location
+        )
+        
+        # Hash and set the password
+        new_user.set_password(password)
+
+        # Save to database
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({
+            "message": "User registered successfully",
+            "user": new_user.to_dict()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print("REGISTRATION ERROR:", str(e))
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     
-    # Check if data was provided
     if not data:
         return jsonify({"error": "No input data provided"}), 400
 
@@ -42,22 +73,18 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     # Verify user exists and the password matches
-    # (Note: make sure your User model has a check_password method using Werkzeug security)
     if user and user.check_password(password):
-        # Create JWT access token (converting user.id to string to ensure compatibility)
         access_token = create_access_token(identity=str(user.id))
         
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "role": getattr(user, 'role', 'user')
-            }
+            "user": user.to_dict()
         }), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
+
+
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
@@ -68,9 +95,4 @@ def get_current_user():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    return jsonify({
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "role": user.role
-    }), 200
+    return jsonify(user.to_dict()), 200
