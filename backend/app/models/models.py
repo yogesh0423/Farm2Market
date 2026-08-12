@@ -75,10 +75,10 @@ class Order(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    farmer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    total_amount = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String(30), default='pending')  # pending, confirmed, shipped, delivered, cancelled
-    shipping_address = db.Column(db.Text, nullable=False)
+    farmer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Optional if multi-farmer orders are allowed
+    total_amount = db.Column(db.Float, nullable=False, default=0.0)
+    status = db.Column(db.String(30), default='Pending')  # Pending, Confirmed, Shipped, Delivered, Cancelled
+    shipping_address = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
