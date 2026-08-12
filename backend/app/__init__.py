@@ -9,21 +9,20 @@ db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 
-def create_app(config_class=Config):
+def create_app():
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(Config)
 
-    # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
     CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
 
-    # Import models
-    from app.models import models
+    @app.route('/')
+    def index():
+        return {"message": "Farm2Market API is running successfully!"}
 
-    @app.route('/api/v1/health', methods=['GET'])
-    def health_check():
-        return {"status": "healthy", "service": "Farm2Market API"}, 200
+    from app.routes.auth import auth_bp
+    app.register_blueprint(auth_bp)
 
     return app
