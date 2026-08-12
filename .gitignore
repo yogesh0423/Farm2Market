@@ -1,0 +1,22 @@
+# Python / Flask
+backend/venv/
+venv/
+**/__pycache__/
+*.pyc
+backend/*.db
+backend/instance/
+*.db
+.env
+backend/.env
+
+# Node / React
+frontend/node_modules/
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+*.local
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
