@@ -24,30 +24,40 @@ def register():
     return jsonify({"message": "User registered successfully"}), 201
 @auth_bp.route('/login', methods=['POST'])
 @auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
+    
+    # Check if data was provided
+    if not data:
+        return jsonify({"error": "No input data provided"}), 400
+
     email = data.get('email')
     password = data.get('password')
 
-    # Find the user in the database
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    # Find user in the database by email
     user = User.query.filter_by(email=email).first()
 
-    # Verify user exists and password is correct (assuming you use a check_password method or Werkzeug security)
-    if user and user.check_password(password): # or check your hashing logic here
-        # Create a JWT access token
+    # Verify user exists and the password matches
+    # (Note: make sure your User model has a check_password method using Werkzeug security)
+    if user and user.check_password(password):
+        # Create JWT access token (converting user.id to string to ensure compatibility)
         access_token = create_access_token(identity=str(user.id))
+        
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
             "user": {
                 "id": user.id,
                 "email": user.email,
-                "role": user.role # if applicable
+                "role": getattr(user, 'role', 'user')
             }
         }), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
-
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
