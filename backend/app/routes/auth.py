@@ -21,6 +21,7 @@ def register():
     # Check if user already exists...
     # Save user with phone, location, and full_name into your database
 
+    return jsonify({"message": "User registered successfully"}), 201
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """Log in an existing user and return a JWT token"""
