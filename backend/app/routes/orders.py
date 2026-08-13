@@ -17,12 +17,13 @@ def create_order():
             return jsonify({"error": "Only buyers can place orders"}), 403
 
         data = request.get_json() or {}
-        print("DEBUG ORDER DATA:", data)
+        print("DEBUG ORDER DATA RECEIVED:", data)
 
-        product_id = data.get('product_id') or data.get('productId')
-        quantity = data.get('quantity') or data.get('qty')
+        # Accept multiple naming conventions from the frontend modal
+        product_id = data.get('product_id') or data.get('productId') or data.get('id')
+        quantity = data.get('quantity') or data.get('qty') or 1.0
 
-        if not product_id or not quantity:
+        if not product_id:
             return jsonify({"error": "Product ID and quantity are required"}), 400
 
         product = Product.query.get(product_id)
@@ -33,7 +34,7 @@ def create_order():
         if product.available_quantity < qty_float:
             return jsonify({"error": "Insufficient stock available"}), 400
 
-        total_price = qty_float * product.price_per_unit
+        total_price = qty_float * (product.price_per_unit or 0.0)
 
         # Deduct stock
         product.available_quantity -= qty_float
@@ -69,12 +70,10 @@ def get_orders():
         user = User.query.get(current_user_id)
 
         if user.role == 'farmer':
-            # Farmers see orders for their products
             farmer_products = Product.query.filter_by(farmer_id=user.id).all()
             product_ids = [p.id for p in farmer_products]
             orders = Order.query.filter(Order.product_id.in_(product_ids)).all()
         else:
-            # Buyers see their own orders
             orders = Order.query.filter_by(buyer_id=user.id).all()
 
         return jsonify([order.to_dict() for order in orders]), 200

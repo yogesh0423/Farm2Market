@@ -1,28 +1,37 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from app import db
 from app.models.models import Product, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-product_bp = Blueprint('product', __name__, url_prefix='/api/v1/products')
-@product_bp.route('', methods=['POST'], strict_slashes=False)
-@product_bp.route('/', methods=['POST'], strict_slashes=False)
-@jwt_required()
+# Notice: url_prefix here is empty so it relies cleanly on app.py's /api/v1 prefix
+product_bp = Blueprint('product', __name__, url_prefix='/products')
+
+@product_bp.route('', methods=['POST', 'OPTIONS'], strict_slashes=False)
+@product_bp.route('/', methods=['POST', 'OPTIONS'], strict_slashes=False)
+@jwt_required(optional=True)
 def add_product():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        return response, 200
+
     try:
         current_user_id = get_jwt_identity()
+        if not current_user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
         user = User.query.get(current_user_id)
-        
         if not user or user.role != 'farmer':
             return jsonify({"error": "Only farmers can add products"}), 403
 
         data = request.get_json() or {}
         print("DEBUG RECEIVED PRODUCT DATA:", data)
 
-        # Grab whatever fields exist or fall back to defaults so it never fails validation
         title = data.get('title') or data.get('name') or data.get('crop_title') or "Crop"
         category = data.get('category') or "General"
         
-        # Try to find any numerical value for price and quantity
         price_per_unit = data.get('price_per_unit') or data.get('price') or data.get('cost') or 0.0
         available_quantity = data.get('available_quantity') or data.get('quantity') or data.get('qty') or 1.0
         
@@ -54,8 +63,15 @@ def add_product():
         print("ADD PRODUCT ERROR:", str(e))
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
-@product_bp.route('', methods=['GET'], strict_slashes=False)
-@product_bp.route('/', methods=['GET'], strict_slashes=False)
+@product_bp.route('', methods=['GET', 'OPTIONS'], strict_slashes=False)
+@product_bp.route('/', methods=['GET', 'OPTIONS'], strict_slashes=False)
 def get_all_products():
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type,Authorization")
+        response.headers.add('Access-Control-Allow-Methods', "GET,PUT,POST,DELETE,OPTIONS")
+        return response, 200
+
     products = Product.query.all()
     return jsonify([product.to_dict() for product in products]), 200

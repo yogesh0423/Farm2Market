@@ -14,10 +14,9 @@ class User(db.Model):
     location = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relationships
-    products = db.relationship('Product', backref='farmer', lazy=True, cascade="all, delete-orphan")
-    orders_as_buyer = db.relationship('Order', foreign_keys='Order.buyer_id', backref='buyer', lazy=True)
-    orders_as_farmer = db.relationship('Order', foreign_keys='Order.farmer_id', backref='farmer', lazy=True)
+    # Relationships with unique backref names to prevent collisions
+    products = db.relationship('Product', backref='farmer_user', lazy=True, cascade="all, delete-orphan")
+    orders_as_buyer = db.relationship('Order', foreign_keys='Order.buyer_id', backref='buyer_user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -46,50 +45,51 @@ class Product(db.Model):
     description = db.Column(db.Text, nullable=True)
     category = db.Column(db.String(50), nullable=False, index=True)
     price_per_unit = db.Column(db.Float, nullable=False)
-    unit = db.Column(db.String(20), nullable=False, default='kg')  # 'kg', 'quintal', 'crate'
+    unit = db.Column(db.String(20), nullable=False, default='kg')
     available_quantity = db.Column(db.Float, nullable=False, default=0.0)
     image_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    order_items = db.relationship('OrderItem', backref='product', lazy=True)
 
     def to_dict(self):
         return {
             'id': self.id,
             'farmer_id': self.farmer_id,
-            'farmer_name': self.farmer.name if self.farmer else None,
-            'farmer_location': self.farmer.location if self.farmer else None,
+            'farmer_name': self.farmer_user.name if self.farmer_user else 'Farmer',
+            'farmer_location': self.farmer_user.location if self.farmer_user else '',
             'title': self.title,
             'description': self.description,
             'category': self.category,
+            # Provide multiple variations so the frontend never misses them:
             'price_per_unit': self.price_per_unit,
+            'pricePerUnit': self.price_per_unit,
+            'price': self.price_per_unit,
             'unit': self.unit,
             'available_quantity': self.available_quantity,
+            'availableQuantity': self.available_quantity,
+            'stock': self.available_quantity,
             'image_url': self.image_url,
+            'imageUrl': self.image_url,
             'created_at': self.created_at.isoformat()
         }
-
-
+    
 class Order(db.Model):
     __tablename__ = 'orders'
-
+    
     id = db.Column(db.Integer, primary_key=True)
     buyer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    farmer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Optional if multi-farmer orders are allowed
-    total_amount = db.Column(db.Float, nullable=False, default=0.0)
-    status = db.Column(db.String(30), default='Pending')  # Pending, Confirmed, Shipped, Delivered, Cancelled
-    shipping_address = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Float, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(50), default='Pending')
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def to_dict(self):
         return {
             "id": self.id,
             "buyer_id": self.buyer_id,
-            "buyer_name": self.buyer.name if self.buyer else None,
+            "buyer_name": self.buyer_user.name if self.buyer_user else None,
             "product_id": self.product_id,
-            "product_title": self.product.title if self.product else None,
+            "product_title": self.product_item.title if self.product_item else None,
             "quantity": self.quantity,
             "total_price": self.total_price,
             "status": self.status,
