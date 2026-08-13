@@ -5,7 +5,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 product_bp = Blueprint('product', __name__, url_prefix='/api/v1/products')
 
-@product_bp.route('/', methods=['POST'])
+@product_bp.route('', methods=['POST'], strict_slashes=False)
+@product_bp.route('/', methods=['POST'], strict_slashes=False)
 @jwt_required()
 def add_product():
     try:
@@ -56,7 +57,8 @@ def add_product():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-@product_bp.route('/', methods=['GET'])
+@product_bp.route('', methods=['GET'], strict_slashes=False)
+@product_bp.route('/', methods=['GET'], strict_slashes=False)
 def get_all_products():
     products = Product.query.all()
     return jsonify([product.to_dict() for product in products]), 200
