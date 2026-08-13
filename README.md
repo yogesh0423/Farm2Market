@@ -117,10 +117,10 @@ The project aims to reduce dependency on traditional intermediaries while provid
 | 📋 Project Planning & Requirements | ✅ Completed |
 | 🏗️ System Architecture Design | ✅ Completed |
 | 🛠️ Project Setup | ✅ Completed |
-| 🗄️ Database Design | 🚧 In Progress |
-| 🔐 Authentication & Authorization | 🚧 In Progress |
-| 👨‍🌾 Farmer Module | ⬜ Planned |
-| 🛒 Buyer Module | ⬜ Planned |
+| 🗄️ Database Design | ✅ Completed |
+| 🔐 Authentication & Authorization | ✅ Completed |
+| 👨‍🌾 Farmer Module | 🚧 In Progress |
+| 🛒 Buyer Module | 🚧 In Progress |
 | 🌾 Product Management | ⬜ Planned |
 | 📦 Order Management | ⬜ Planned |
 | 💬 Buyer–Farmer Communication | ⬜ Planned |
