@@ -18,14 +18,17 @@ def add_product():
             return jsonify({"error": "Only farmers can add products"}), 403
 
         data = request.get_json()
+        print("DEBUG RECEIVED PRODUCT DATA:", data)
+        
         if not data:
             return jsonify({"error": "No input data provided"}), 400
 
-        title = data.get('title')
+        # Catch variations of keys sent from frontend forms (e.g. price vs price_per_unit)
+        title = data.get('title') or data.get('name')
         category = data.get('category')
-        price_per_unit = data.get('price_per_unit')
+        price_per_unit = data.get('price_per_unit') or data.get('price')
         unit = data.get('unit', 'kg')
-        available_quantity = data.get('available_quantity')
+        available_quantity = data.get('available_quantity') or data.get('quantity')
         description = data.get('description')
         image_url = data.get('image_url')
 
