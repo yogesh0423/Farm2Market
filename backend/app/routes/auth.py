@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models.models import User
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/v1/auth')
 
-@auth_bp.route('/register', methods=['POST'])
+@auth_bp.route('/register', methods=['POST'], strict_slashes=False)
+@auth_bp.route('', methods=['POST'], strict_slashes=False)
 def register():
     try:
         data = request.get_json()
@@ -29,7 +29,7 @@ def register():
         if existing_user:
             return jsonify({"error": "Email already registered"}), 400
 
-        # Create new user instance (note: your User model uses 'name' field)
+        # Create new user instance
         new_user = User(
             name=full_name,
             email=email,
@@ -47,6 +47,8 @@ def register():
 
         return jsonify({
             "message": "User registered successfully",
+            "access_token": create_access_token(identity=str(new_user.id)),
+            # "token":token,
             "user": new_user.to_dict()
         }), 201
 
@@ -56,14 +58,14 @@ def register():
         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'], strict_slashes=False)
 def login():
     data = request.get_json()
     
     if not data:
         return jsonify({"error": "No input data provided"}), 400
 
-    email = data.get('email')
+    email = data.get('email') or data.get('username')
     password = data.get('password')
 
     if not email or not password:
@@ -79,13 +81,14 @@ def login():
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
+            "token": access_token, # Added fallback key in case frontend looks for 'token'
             "user": user.to_dict()
         }), 200
 
     return jsonify({"error": "Invalid email or password"}), 401
 
 
-@auth_bp.route('/me', methods=['GET'])
+@auth_bp.route('/me', methods=['GET'], strict_slashes=False)
 @jwt_required()
 def get_current_user():
     """Get details of the currently logged-in user"""

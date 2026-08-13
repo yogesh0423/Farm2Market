@@ -29,6 +29,7 @@ function App() {
             {/* Protected Buyer Routes */}
             <Route element={<ProtectedRoute allowedRole="buyer" />}>
               <Route path="/buyer/dashboard" element={<BuyerDashboard />} />
+              <Route path="/orders" element={<BuyerDashboard />} />
             </Route>
           </Routes>
         </div>
