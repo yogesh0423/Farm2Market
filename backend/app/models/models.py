@@ -85,16 +85,15 @@ class Order(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
-            'buyer_id': self.buyer_id,
-            'buyer_name': self.buyer.name if self.buyer else None,
-            'farmer_id': self.farmer_id,
-            'farmer_name': self.farmer.name if self.farmer else None,
-            'total_amount': self.total_amount,
-            'status': self.status,
-            'shipping_address': self.shipping_address,
-            'created_at': self.created_at.isoformat(),
-            'items': [item.to_dict() for item in self.items]
+            "id": self.id,
+            "buyer_id": self.buyer_id,
+            "buyer_name": self.buyer.name if self.buyer else None,
+            "product_id": self.product_id,
+            "product_title": self.product.title if self.product else None,
+            "quantity": self.quantity,
+            "total_price": self.total_price,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
 

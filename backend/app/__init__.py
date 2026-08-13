@@ -23,9 +23,11 @@ def create_app():
         return {"message": "Farm2Market API is running successfully!"}
 
     from app.routes.auth import auth_bp
-    from app.routes.product import product_bp  # <-- Added product blueprint import
+    from app.routes.product import product_bp
+    from app.routes.orders import order_bp  # <-- Added order blueprint import
     
     app.register_blueprint(auth_bp)
-    app.register_blueprint(product_bp)      # <-- Added product blueprint registration
-
+    app.register_blueprint(product_bp)  
+    app.register_blueprint(order_bp)      # <-- Added order blueprint registration
+ 
     return app
