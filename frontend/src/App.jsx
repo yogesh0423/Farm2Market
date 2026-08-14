@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import ProtectedRoute from './routes/ProtectedRoute';
 import Navbar from './components/Navbar';
 
@@ -13,25 +14,72 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 text-slate-800">
-        <Navbar />
+
         <Routes>
-          {/* Public Routes */}
+
+          {/* Marketplace - has its own custom header */}
           <Route path="/" element={<Marketplace />} />
           <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+
+          {/* Public Routes with Navbar */}
+          <Route
+            path="/login"
+            element={
+              <>
+                <Navbar />
+                <Login />
+              </>
+            }
+          />
+
+          <Route
+            path="/register"
+            element={
+              <>
+                <Navbar />
+                <Register />
+              </>
+            }
+          />
 
           {/* Protected Farmer Routes */}
           <Route element={<ProtectedRoute allowedRole="farmer" />}>
-            <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
+            <Route
+              path="/farmer/dashboard"
+              element={
+                <>
+                  <Navbar />
+                  <FarmerDashboard />
+                </>
+              }
+            />
           </Route>
 
           {/* Protected Buyer Routes */}
           <Route element={<ProtectedRoute allowedRole="buyer" />}>
-            <Route path="/buyer/dashboard" element={<BuyerDashboard />} />
-            <Route path="/orders" element={<BuyerDashboard />} />
+            <Route
+              path="/buyer/dashboard"
+              element={
+                <>
+                  <Navbar />
+                  <BuyerDashboard />
+                </>
+              }
+            />
+
+            <Route
+              path="/orders"
+              element={
+                <>
+                  <Navbar />
+                  <BuyerDashboard />
+                </>
+              }
+            />
           </Route>
+
         </Routes>
+
       </div>
     </Router>
   );

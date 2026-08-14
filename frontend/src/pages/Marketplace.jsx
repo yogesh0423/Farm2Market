@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
-import API from '../api/axios';
+
+import { LanguageContext } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
+import API from '../api/axios';
+import LanguageSelector from '../components/LanguageSelector';
 
 import {
   Search,
@@ -16,7 +19,7 @@ import {
   SlidersHorizontal,
   Sun,
   Moon,
-  Monitor
+  Monitor,
 } from 'lucide-react';
 
 import { useNavigate, Link } from 'react-router-dom';
@@ -24,8 +27,18 @@ import { useNavigate, Link } from 'react-router-dom';
 
 const Marketplace = () => {
 
-  const { user, token, logout } = useContext(AuthContext);
+  // ============================================================
+  // CONTEXT
+  // ============================================================
+
+  const { lang, changeLanguage, t } =
+    useContext(LanguageContext);
+
+  const { user, token, logout } =
+    useContext(AuthContext);
+
   const navigate = useNavigate();
+
 
   // ============================================================
   // STATE
@@ -35,13 +48,13 @@ const Marketplace = () => {
   const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState('All');
 
-  // Theme
   const [theme, setTheme] = useState('cyber');
 
-  // Order modal
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] =
+    useState(null);
+
   const [quantity, setQuantity] = useState(1);
 
   const [orderError, setOrderError] = useState('');
@@ -53,12 +66,36 @@ const Marketplace = () => {
   // ============================================================
 
   const categories = [
-    { name: 'All', icon: '⚡' },
-    { name: 'Vegetables', icon: '🥬' },
-    { name: 'Fruits', icon: '🍎' },
-    { name: 'Grains', icon: '🌾' },
-    { name: 'Pulses', icon: '🫘' },
-    { name: 'Spices', icon: '🌶️' }
+    {
+      id: 'All',
+      label: t('all'),
+      icon: '⚡',
+    },
+    {
+      id: 'Vegetables',
+      label: t('vegetables'),
+      icon: '🥬',
+    },
+    {
+      id: 'Fruits',
+      label: t('fruits'),
+      icon: '🍎',
+    },
+    {
+      id: 'Grains',
+      label: t('grains'),
+      icon: '🌾',
+    },
+    {
+      id: 'Pulses',
+      label: t('pulses'),
+      icon: '🫘',
+    },
+    {
+      id: 'Spices',
+      label: t('spices'),
+      icon: '🌶️',
+    },
   ];
 
 
@@ -79,9 +116,10 @@ const Marketplace = () => {
 
       const res = await API.get('/products');
 
-      console.log('=================================');
-      console.log('PRODUCT API RESPONSE:', res.data);
-      console.log('=================================');
+      console.log(
+        'PRODUCT API RESPONSE:',
+        res.data
+      );
 
 
       // ----------------------------------------------------------
@@ -92,29 +130,17 @@ const Marketplace = () => {
 
       if (Array.isArray(res.data)) {
 
-        // Backend returns:
-        // [
-        //   {...},
-        //   {...}
-        // ]
-
         productList = res.data;
 
-      } else if (Array.isArray(res.data.products)) {
-
-        // Backend returns:
-        // {
-        //   products: [...]
-        // }
+      } else if (
+        Array.isArray(res.data.products)
+      ) {
 
         productList = res.data.products;
 
-      } else if (Array.isArray(res.data.data)) {
-
-        // Backend returns:
-        // {
-        //   data: [...]
-        // }
+      } else if (
+        Array.isArray(res.data.data)
+      ) {
 
         productList = res.data.data;
 
@@ -133,86 +159,56 @@ const Marketplace = () => {
       // Normalize backend fields
       // ----------------------------------------------------------
 
-      const normalizedProducts = productList.map((item) => {
+      const normalizedProducts =
+        productList.map((item) => {
 
-        return {
+          return {
+            ...item,
 
-          ...item,
+            title:
+              item.title ??
+              item.name ??
+              item.crop_title ??
+              'Crop',
 
-          // Product title
-          title:
-            item.title ??
-            item.name ??
-            item.crop_title ??
-            'Crop',
+            category:
+              item.category ??
+              'General',
 
+            price_per_kg:
+              Number(
+                item.price_per_kg ??
+                item.price_per_unit ??
+                item.price ??
+                0
+              ),
 
-          // Category
-          category:
-            item.category ??
-            'General',
+            quantity_available:
+              Number(
+                item.quantity_available ??
+                item.available_quantity ??
+                item.quantity ??
+                0
+              ),
 
+            location:
+              item.location ??
+              item.farm_location ??
+              item.description ??
+              'Location not specified',
 
-          // Price
-          // Backend:
-          // price_per_unit
-          //
-          // Frontend:
-          // price_per_kg
+            farmer_name:
+              item.farmer_name ??
+              item.farmer?.name ??
+              item.farmer?.username ??
+              'Farmer',
 
-          price_per_kg:
-            Number(
-              item.price_per_kg ??
-              item.price_per_unit ??
-              item.price ??
-              0
-            ),
+            image_url:
+              item.image_url ??
+              null,
+          };
 
-
-          // Quantity
-          // Backend:
-          // available_quantity
-          //
-          // Frontend:
-          // quantity_available
-
-          quantity_available:
-            Number(
-              item.quantity_available ??
-              item.available_quantity ??
-              item.quantity ??
-              0
-            ),
-
-
-          // Location
-          //
-          // Your backend currently stores the submitted
-          // location in description.
-
-          location:
-            item.location ??
-            item.farm_location ??
-            item.description ??
-            'Location not specified',
-
-
-          // Farmer
-          farmer_name:
-            item.farmer_name ??
-            item.farmer?.name ??
-            item.farmer?.username ??
-            'Farmer',
-
-
-          // Image
-          image_url:
-            item.image_url ??
-            null
-
-        };
-
-      });
+        });
 
 
       console.log(
@@ -220,9 +216,6 @@ const Marketplace = () => {
         normalizedProducts
       );
 
-
-      // IMPORTANT:
-      // Always store an ARRAY in products state.
       setProducts(normalizedProducts);
 
     } catch (err) {
@@ -231,9 +224,6 @@ const Marketplace = () => {
         'Failed to load marketplace products:',
         err.response?.data || err
       );
-
-      // Prevent:
-      // products.filter is not a function
 
       setProducts([]);
 
@@ -259,6 +249,7 @@ const Marketplace = () => {
 
 
     // User must be logged in
+
     if (!token) {
 
       navigate('/login');
@@ -268,16 +259,21 @@ const Marketplace = () => {
 
 
     // Validate product
+
     if (!selectedProduct) {
 
-      setOrderError('Please select a product.');
+      setOrderError(
+        'Please select a product.'
+      );
 
       return;
     }
 
 
     // Validate quantity
-    const requestedQuantity = parseFloat(quantity);
+
+    const requestedQuantity =
+      parseFloat(quantity);
 
     if (
       !requestedQuantity ||
@@ -305,13 +301,17 @@ const Marketplace = () => {
     }
 
 
+    // Send order to backend
+
     try {
 
       await API.post('/orders', {
 
-        product_id: selectedProduct.id,
+        product_id:
+          selectedProduct.id,
 
-        quantity_kg: requestedQuantity
+        quantity_kg:
+          requestedQuantity,
 
       });
 
@@ -320,6 +320,8 @@ const Marketplace = () => {
         '⚡ Order Executed Successfully!'
       );
 
+
+      // Close modal and refresh products
 
       setTimeout(() => {
 
@@ -359,49 +361,53 @@ const Marketplace = () => {
   // FILTER PRODUCTS
   // ============================================================
 
-  const safeProducts = Array.isArray(products)
-    ? products
-    : [];
+  const safeProducts =
+    Array.isArray(products)
+      ? products
+      : [];
 
 
-  const filteredProducts = safeProducts.filter((item) => {
+  const filteredProducts =
+    safeProducts.filter((item) => {
 
-    const title = String(
-      item?.title ?? ''
-    ).toLowerCase();
+      const title =
+        String(
+          item?.title ?? ''
+        ).toLowerCase();
 
+      const location =
+        String(
+          item?.location ?? ''
+        ).toLowerCase();
 
-    const location = String(
-      item?.location ?? ''
-    ).toLowerCase();
+      const category =
+        String(
+          item?.category ?? ''
+        ).toLowerCase();
 
-
-    const category = String(
-      item?.category ?? ''
-    );
-
-
-    const search = searchTerm
-      .toLowerCase()
-      .trim();
-
-
-    const matchesSearch =
-      title.includes(search) ||
-      location.includes(search);
+      const search =
+        searchTerm
+          .toLowerCase()
+          .trim();
 
 
-    const matchesCategory =
-      selectedCategory === 'All' ||
-      category === selectedCategory;
+      const matchesSearch =
+        title.includes(search) ||
+        location.includes(search);
 
 
-    return (
-      matchesSearch &&
-      matchesCategory
-    );
+      const matchesCategory =
+        activeCategory === 'All' ||
+        category ===
+          activeCategory.toLowerCase();
 
-  });
+
+      return (
+        matchesSearch &&
+        matchesCategory
+      );
+
+    });
 
 
   // ============================================================
@@ -464,7 +470,7 @@ const Marketplace = () => {
         'bg-[#0d1711] border-emerald-500/40',
 
       modalInput:
-        'bg-[#080d0a] border-emerald-900/60 text-white focus:border-emerald-400'
+        'bg-[#080d0a] border-emerald-900/60 text-white focus:border-emerald-400',
 
     },
 
@@ -523,7 +529,7 @@ const Marketplace = () => {
         'bg-slate-900 border-slate-800',
 
       modalInput:
-        'bg-slate-950 border-slate-800 text-white focus:border-teal-400'
+        'bg-slate-950 border-slate-800 text-white focus:border-teal-400',
 
     },
 
@@ -582,9 +588,9 @@ const Marketplace = () => {
         'bg-white border-slate-200',
 
       modalInput:
-        'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'
+        'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500',
 
-    }
+    },
 
   }[theme];
 
@@ -622,23 +628,52 @@ const Marketplace = () => {
           items-center
           gap-6
           justify-between
-          transition-colors
           ${styles.ticker}
         `}
       >
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div
+          className="
+            flex
+            items-center
+            gap-2
+            shrink-0
+          "
+        >
 
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span
+            className="
+              w-2
+              h-2
+              rounded-full
+              bg-emerald-400
+              animate-ping
+            "
+          />
 
-          <span className="font-bold uppercase tracking-wider">
+          <span
+            className="
+              font-bold
+              uppercase
+              tracking-wider
+            "
+          >
             LIVE AGRI-EXCHANGE
           </span>
 
         </div>
 
 
-        <div className="flex gap-8 overflow-x-auto whitespace-nowrap scrollbar-none font-medium">
+        <div
+          className="
+            flex
+            gap-8
+            overflow-x-auto
+            whitespace-nowrap
+            scrollbar-none
+            font-medium
+          "
+        >
 
           <span>
             🍅 Tomatoes:
@@ -647,12 +682,14 @@ const Marketplace = () => {
             </span>
           </span>
 
+
           <span>
             🧅 Onions:
             <span className="font-bold">
               ₹28/kg ↑
             </span>
           </span>
+
 
           <span>
             🌾 Organic Wheat:
@@ -661,9 +698,15 @@ const Marketplace = () => {
             </span>
           </span>
 
+
           <span>
             🌶️ Chili (Guntur):
-            <span className="text-rose-400 font-bold">
+            <span
+              className="
+                text-rose-400
+                font-bold
+              "
+            >
               ₹190/kg ↓
             </span>
           </span>
@@ -671,9 +714,23 @@ const Marketplace = () => {
         </div>
 
 
-        <div className="hidden md:flex items-center gap-1 text-[10px]">
+        <div
+          className="
+            hidden
+            md:flex
+            items-center
+            gap-1
+            text-[10px]
+          "
+        >
 
-          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+          <ShieldCheck
+            className="
+              w-3
+              h-3
+              text-emerald-400
+            "
+          />
 
           Verified Decentralized Node
 
@@ -693,7 +750,6 @@ const Marketplace = () => {
           sticky
           top-0
           z-30
-          transition-colors
           ${styles.header}
         `}
       >
@@ -711,6 +767,8 @@ const Marketplace = () => {
             items-center
           "
         >
+
+          {/* Logo */}
 
           <div
             className="
@@ -750,7 +808,13 @@ const Marketplace = () => {
                 "
               >
 
-                <Sprout className="w-5 h-5 text-emerald-400" />
+                <Sprout
+                  className="
+                    w-5
+                    h-5
+                    text-emerald-400
+                  "
+                />
 
               </div>
 
@@ -772,25 +836,12 @@ const Marketplace = () => {
               >
 
                 FARM
+
                 <span className={styles.accentText}>
                   2
                 </span>
+
                 MARKET
-
-
-                <span
-                  className={`
-                    text-[9px]
-                    font-mono
-                    px-1.5
-                    py-0.5
-                    rounded
-                    border
-                    ${styles.badgeBg}
-                  `}
-                >
-                  {theme.toUpperCase()}
-                </span>
 
               </span>
 
@@ -799,101 +850,151 @@ const Marketplace = () => {
           </div>
 
 
-          <div className="flex items-center space-x-3">
+          {/* ==================================================
+              RIGHT SIDE
+          ================================================== */}
 
-            {/* Theme selector */}
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+              sm:gap-3
+            "
+          >
+
+            {/* ==================================================
+                THEME + LANGUAGE
+            ================================================== */}
 
             <div
               className="
                 flex
                 items-center
-                p-1
-                rounded-2xl
-                border
-                border-slate-700/30
-                bg-black/10
-                backdrop-blur-md
+                gap-2
               "
             >
 
-              <button
-                onClick={() => setTheme('cyber')}
-                className={`
-                  p-1.5
-                  rounded-xl
-                  text-xs
-                  font-bold
-                  transition
-                  flex
+              {/* Theme */}
+
+              <div
+                className="
+                  hidden
+                  sm:flex
                   items-center
-                  gap-1
-                  ${
-                    theme === 'cyber'
-                      ? 'bg-emerald-500 text-black shadow-md'
-                      : 'text-slate-400 hover:text-white'
-                  }
-                `}
-                title="Cyber-Agri Mode"
+                  p-1
+                  rounded-2xl
+                  border
+                  border-slate-700/30
+                  bg-black/10
+                  backdrop-blur-md
+                "
               >
 
-                <Monitor className="w-3.5 h-3.5" />
+                {/* Cyber */}
 
-              </button>
-
-
-              <button
-                onClick={() => setTheme('dark')}
-                className={`
-                  p-1.5
-                  rounded-xl
-                  text-xs
-                  font-bold
-                  transition
-                  flex
-                  items-center
-                  gap-1
-                  ${
-                    theme === 'dark'
-                      ? 'bg-teal-500 text-black shadow-md'
-                      : 'text-slate-400 hover:text-white'
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTheme('cyber')
                   }
-                `}
-                title="Dark Mode"
-              >
+                  className={`
+                    p-1.5
+                    rounded-xl
+                    transition
+                    ${
+                      theme === 'cyber'
+                        ? 'bg-emerald-500 text-black'
+                        : 'text-slate-400 hover:text-white'
+                    }
+                  `}
+                  title="Cyber-Agri Mode"
+                >
 
-                <Moon className="w-3.5 h-3.5" />
+                  <Monitor
+                    className="
+                      w-3.5
+                      h-3.5
+                    "
+                  />
 
-              </button>
+                </button>
 
 
-              <button
-                onClick={() => setTheme('light')}
-                className={`
-                  p-1.5
-                  rounded-xl
-                  text-xs
-                  font-bold
-                  transition
-                  flex
-                  items-center
-                  gap-1
-                  ${
-                    theme === 'light'
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'text-slate-400 hover:text-slate-700'
+                {/* Dark */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTheme('dark')
                   }
-                `}
-                title="Light Mode"
-              >
+                  className={`
+                    p-1.5
+                    rounded-xl
+                    transition
+                    ${
+                      theme === 'dark'
+                        ? 'bg-teal-500 text-black'
+                        : 'text-slate-400 hover:text-white'
+                    }
+                  `}
+                  title="Dark Mode"
+                >
 
-                <Sun className="w-3.5 h-3.5" />
+                  <Moon
+                    className="
+                      w-3.5
+                      h-3.5
+                    "
+                  />
 
-              </button>
+                </button>
+
+
+                {/* Light */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTheme('light')
+                  }
+                  className={`
+                    p-1.5
+                    rounded-xl
+                    transition
+                    ${
+                      theme === 'light'
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-slate-400 hover:text-slate-700'
+                    }
+                  `}
+                  title="Light Mode"
+                >
+
+                  <Sun
+                    className="
+                      w-3.5
+                      h-3.5
+                    "
+                  />
+
+                </button>
+
+              </div>
+
+
+              {/* ==================================================
+                  LANGUAGE SELECTOR
+                  ================================================== */}
+
+              <LanguageSelector />
 
             </div>
 
 
-            {/* Logged in user */}
+            {/* ==================================================
+                AUTHENTICATION
+            ================================================== */}
 
             {token ? (
 
@@ -911,7 +1012,15 @@ const Marketplace = () => {
                 "
               >
 
-                <span className="text-xs font-mono flex items-center gap-2">
+                <span
+                  className="
+                    text-xs
+                    font-mono
+                    flex
+                    items-center
+                    gap-2
+                  "
+                >
 
                   <span
                     className="
@@ -919,9 +1028,8 @@ const Marketplace = () => {
                       h-2
                       rounded-full
                       bg-emerald-400
-                      shadow-[0_0_8px_#34d399]
                     "
-                  ></span>
+                  />
 
                   {user?.name || 'User'}
 
@@ -931,14 +1039,17 @@ const Marketplace = () => {
                 {user?.role === 'farmer' && (
 
                   <button
-                    onClick={() => navigate('/farmer/dashboard')}
+                    onClick={() =>
+                      navigate(
+                        '/farmer/dashboard'
+                      )
+                    }
                     className={`
                       px-3
                       py-1.5
                       rounded-xl
                       text-xs
                       font-bold
-                      transition
                       flex
                       items-center
                       gap-1
@@ -948,7 +1059,12 @@ const Marketplace = () => {
 
                     Dashboard
 
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight
+                      className="
+                        w-3
+                        h-3
+                      "
+                    />
 
                   </button>
 
@@ -957,19 +1073,26 @@ const Marketplace = () => {
 
                 <button
                   onClick={() => {
+
                     logout();
+
                     navigate('/login');
+
                   }}
                   className="
                     p-1.5
                     text-slate-400
                     hover:text-rose-400
-                    transition
                   "
                   title="Logout"
                 >
 
-                  <LogOut className="w-4 h-4" />
+                  <LogOut
+                    className="
+                      w-4
+                      h-4
+                    "
+                  />
 
                 </button>
 
@@ -977,7 +1100,13 @@ const Marketplace = () => {
 
             ) : (
 
-              <div className="flex items-center space-x-2">
+              <div
+                className="
+                  flex
+                  items-center
+                  space-x-2
+                "
+              >
 
                 <Link
                   to="/login"
@@ -986,8 +1115,6 @@ const Marketplace = () => {
                     py-2
                     text-xs
                     font-bold
-                    hover:opacity-80
-                    transition
                   "
                 >
                   Sign In
@@ -1002,7 +1129,6 @@ const Marketplace = () => {
                     rounded-xl
                     text-xs
                     font-bold
-                    transition
                     ${styles.btnPrimary}
                   `}
                 >
@@ -1046,7 +1172,15 @@ const Marketplace = () => {
           "
         >
 
-          <div
+          {/* IMPORTANT:
+              Language selector has intentionally been removed
+              from here.
+          */}
+
+
+          {/* Direct Protocol */}
+
+          <span
             className="
               inline-flex
               items-center
@@ -1059,7 +1193,6 @@ const Marketplace = () => {
               border-emerald-500/30
               text-xs
               font-mono
-              tracking-wide
             "
           >
 
@@ -1068,14 +1201,15 @@ const Marketplace = () => {
                 w-3.5
                 h-3.5
                 text-amber-400
-                animate-pulse
               "
             />
 
-            DIRECT FARMER-TO-BUYER PROTOCOL
+            {t('directProtocol')}
 
-          </div>
+          </span>
 
+
+          {/* Hero Title */}
 
           <h1
             className="
@@ -1087,7 +1221,8 @@ const Marketplace = () => {
             "
           >
 
-            Cut Out The Middlemen.
+            {t('heroTitleLine1')}
+
             <br />
 
             <span
@@ -1100,11 +1235,15 @@ const Marketplace = () => {
                 text-transparent
               "
             >
-              Empower Direct Farmers.
+
+              {t('heroTitleLine2')}
+
             </span>
 
           </h1>
 
+
+          {/* Hero Subtitle */}
 
           <p
             className="
@@ -1113,17 +1252,23 @@ const Marketplace = () => {
               mx-auto
               text-sm
               sm:text-base
-              font-normal
             "
           >
-            Buy farm-fresh harvests directly from verified regional
-            cultivators with zero markups.
+
+            {t('heroSubtitle')}
+
           </p>
 
 
           {/* Search */}
 
-          <div className="max-w-2xl mx-auto pt-2">
+          <div
+            className="
+              max-w-2xl
+              mx-auto
+              pt-2
+            "
+          >
 
             <div
               className={`
@@ -1132,12 +1277,17 @@ const Marketplace = () => {
                 border
                 rounded-2xl
                 shadow-2xl
-                transition-all
                 ${styles.searchContainer}
               `}
             >
 
-              <div className="relative flex items-center">
+              <div
+                className="
+                  relative
+                  flex
+                  items-center
+                "
+              >
 
                 <Search
                   className="
@@ -1152,12 +1302,14 @@ const Marketplace = () => {
 
                 <input
                   type="text"
-                  placeholder="
-                    Search organic produce, crops, locations...
-                  "
+                  placeholder={t(
+                    'searchPlaceholder'
+                  )}
                   value={searchTerm}
                   onChange={(e) =>
-                    setSearchTerm(e.target.value)
+                    setSearchTerm(
+                      e.target.value
+                    )
                   }
                   className={`
                     w-full
@@ -1166,10 +1318,8 @@ const Marketplace = () => {
                     py-3.5
                     rounded-xl
                     text-sm
-                    font-medium
                     border
                     outline-none
-                    transition-all
                     ${styles.searchInput}
                   `}
                 />
@@ -1200,7 +1350,9 @@ const Marketplace = () => {
         "
       >
 
-        {/* Category filters */}
+        {/* ==================================================
+            CATEGORY FILTERS
+        ================================================== */}
 
         <div
           className={`
@@ -1218,10 +1370,20 @@ const Marketplace = () => {
           `}
         >
 
-          <div className="flex items-center gap-2">
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
 
             <SlidersHorizontal
-              className="w-4 h-4 text-emerald-400"
+              className="
+                w-4
+                h-4
+                text-emerald-400
+              "
             />
 
             <h2
@@ -1234,7 +1396,9 @@ const Marketplace = () => {
                 opacity-80
               "
             >
-              Filter By Produce
+
+              {t('filterByProduce')}
+
             </h2>
 
           </div>
@@ -1248,16 +1412,17 @@ const Marketplace = () => {
               pb-2
               w-full
               sm:w-auto
-              scrollbar-none
             "
           >
 
             {categories.map((cat) => (
 
               <button
-                key={cat.name}
+                key={cat.id}
                 onClick={() =>
-                  setSelectedCategory(cat.name)
+                  setActiveCategory(
+                    cat.id
+                  )
                 }
                 className={`
                   px-4
@@ -1266,14 +1431,13 @@ const Marketplace = () => {
                   text-xs
                   font-bold
                   transition-all
-                  duration-300
                   flex
                   items-center
                   gap-2
                   whitespace-nowrap
                   border
                   ${
-                    selectedCategory === cat.name
+                    activeCategory === cat.id
                       ? styles.filterActive
                       : styles.filterInactive
                   }
@@ -1285,7 +1449,7 @@ const Marketplace = () => {
                 </span>
 
                 <span>
-                  {cat.name}
+                  {cat.label}
                 </span>
 
               </button>
@@ -1303,7 +1467,12 @@ const Marketplace = () => {
 
         {loading ? (
 
-          <div className="text-center py-20">
+          <div
+            className="
+              text-center
+              py-20
+            "
+          >
 
             <div
               className="
@@ -1317,7 +1486,7 @@ const Marketplace = () => {
                 mx-auto
                 mb-4
               "
-            ></div>
+            />
 
             <p
               className="
@@ -1364,20 +1533,36 @@ const Marketplace = () => {
             </div>
 
 
-            <h3 className="text-base font-bold mb-1">
+            <h3
+              className="
+                text-base
+                font-bold
+                mb-1
+              "
+            >
               No Produce Found
             </h3>
 
 
-            <p className="text-xs opacity-60 mb-6">
-              No produce matches your search or category filter.
+            <p
+              className="
+                text-xs
+                opacity-60
+                mb-6
+              "
+            >
+              No produce matches your
+              search or category filter.
             </p>
 
 
             <button
               onClick={() => {
+
                 setSearchTerm('');
-                setSelectedCategory('All');
+
+                setActiveCategory('All');
+
               }}
               className="
                 text-xs
@@ -1514,11 +1699,23 @@ const Marketplace = () => {
                     </h3>
 
 
-                    <p className="text-xs opacity-60 mb-5 flex items-center gap-1.5">
+                    <p
+                      className="
+                        text-xs
+                        opacity-60
+                        mb-5
+                      "
+                    >
 
                       Farmer:
 
-                      <span className="font-semibold opacity-100">
+                      <span
+                        className="
+                          font-semibold
+                          opacity-100
+                          ml-1
+                        "
+                      >
                         {item.farmer_name}
                       </span>
 
@@ -1566,7 +1763,12 @@ const Marketplace = () => {
                           "
                         >
 
-                          <IndianRupee className="w-4 h-4" />
+                          <IndianRupee
+                            className="
+                              w-4
+                              h-4
+                            "
+                          />
 
                           {Number(
                             item.price_per_kg || 0
@@ -1625,8 +1827,11 @@ const Marketplace = () => {
                           />
 
                           {Number(
-                            item.quantity_available || 0
-                          )} kg
+                            item.quantity_available ||
+                              0
+                          )}
+
+                          kg
 
                         </span>
 
@@ -1667,14 +1872,31 @@ const Marketplace = () => {
 
                 {/* Buy button */}
 
-                <div className="p-6 pt-0">
+                <div
+                  className="
+                    p-6
+                    pt-0
+                  "
+                >
 
                   <button
                     onClick={() => {
+
+                      if (!token) {
+
+                        navigate('/login');
+
+                        return;
+                      }
+
                       setSelectedProduct(item);
+
                       setQuantity(1);
+
                       setOrderError('');
+
                       setOrderSuccess('');
+
                     }}
                     disabled={
                       item.quantity_available <= 0
@@ -1692,18 +1914,21 @@ const Marketplace = () => {
                       justify-center
                       gap-2
                       transition-all
-                      duration-200
                       disabled:opacity-50
                       ${styles.btnPrimary}
                     `}
                   >
 
-                    <ShoppingBag className="w-4 h-4" />
+                    <ShoppingBag
+                      className="
+                        w-4
+                        h-4
+                      "
+                    />
 
                     {item.quantity_available > 0
                       ? 'BUY PRODUCE NOW'
-                      : 'OUT OF STOCK'
-                    }
+                      : 'OUT OF STOCK'}
 
                   </button>
 
@@ -1792,7 +2017,8 @@ const Marketplace = () => {
 
                   ₹
                   {Number(
-                    selectedProduct.price_per_kg || 0
+                    selectedProduct.price_per_kg ||
+                      0
                   ).toFixed(2)}
 
                   {' / kg'}
@@ -1833,7 +2059,6 @@ const Marketplace = () => {
                   rounded-xl
                   mb-4
                   text-xs
-                  font-medium
                 "
               >
                 {orderError}
@@ -1856,7 +2081,6 @@ const Marketplace = () => {
                   rounded-xl
                   mb-4
                   text-xs
-                  font-medium
                 "
               >
                 {orderSuccess}
@@ -1893,11 +2117,15 @@ const Marketplace = () => {
                 <input
                   type="number"
                   min="1"
-                  max={selectedProduct.quantity_available}
+                  max={
+                    selectedProduct.quantity_available
+                  }
                   step="0.1"
                   value={quantity}
                   onChange={(e) =>
-                    setQuantity(e.target.value)
+                    setQuantity(
+                      e.target.value
+                    )
                   }
                   className={`
                     w-full
@@ -1944,11 +2172,15 @@ const Marketplace = () => {
                   </span>
 
                   <span>
+
                     ₹
                     {Number(
-                      selectedProduct.price_per_kg || 0
+                      selectedProduct.price_per_kg ||
+                        0
                     ).toFixed(2)}
+
                     {' / kg'}
+
                   </span>
 
                 </div>
@@ -1967,8 +2199,10 @@ const Marketplace = () => {
                   </span>
 
                   <span>
+
                     {parseFloat(quantity) || 0}
                     {' kg'}
+
                   </span>
 
                 </div>
@@ -1991,12 +2225,18 @@ const Marketplace = () => {
                   </span>
 
 
-                  <span className="text-emerald-400">
+                  <span
+                    className="
+                      text-emerald-400
+                    "
+                  >
 
                     ₹
+
                     {(
                       Number(
-                        selectedProduct.price_per_kg || 0
+                        selectedProduct.price_per_kg ||
+                          0
                       ) *
                       (parseFloat(quantity) || 0)
                     ).toFixed(2)}
@@ -2049,7 +2289,6 @@ const Marketplace = () => {
                     font-black
                     uppercase
                     tracking-wider
-                    transition
                     ${styles.btnPrimary}
                   `}
                 >
@@ -2069,7 +2308,6 @@ const Marketplace = () => {
     </div>
 
   );
-
 };
 
 
