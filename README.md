@@ -119,10 +119,10 @@ The project aims to reduce dependency on traditional intermediaries while provid
 | 🛠️ Project Setup | ✅ Completed |
 | 🗄️ Database Design | ✅ Completed |
 | 🔐 Authentication & Authorization | ✅ Completed |
-| 👨‍🌾 Farmer Module | 🚧 In Progress |
-| 🛒 Buyer Module | 🚧 In Progress |
-| 🌾 Product Management | ⬜ Planned |
-| 📦 Order Management | ⬜ Planned |
+| 👨‍🌾 Farmer Module | ✅ Completed |
+| 🛒 Buyer Module | ✅ Completeds |
+| 🌾 Product Management | 🚧 In Progress |
+| 📦 Order Management | 🚧 In Progress |
 | 💬 Buyer–Farmer Communication | ⬜ Planned |
 | 📊 Market Analytics | ⬜ Planned |
 | 🔍 Product Search | ⬜ Planned |
