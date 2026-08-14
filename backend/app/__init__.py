@@ -89,10 +89,12 @@ def create_app():
         url_prefix="/api/v1"
     )
 
-    app.register_blueprint(
-        order_bp,
-        url_prefix="/api/v1"
-    )
+    # IMPORTANT:
+    # order_bp already has:
+    # url_prefix='/api/v1/orders'
+    #
+    # Therefore, do NOT add another /api/v1 here.
+    app.register_blueprint(order_bp)
 
     # ========================================================
     # PRINT ALL REGISTERED ROUTES
