@@ -4,8 +4,10 @@ from app.models.models import Product, User
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 
-# Product blueprint
-# The /api/v1 prefix will be added in app/__init__.py
+# ============================================================
+# PRODUCT BLUEPRINT
+# ============================================================
+
 product_bp = Blueprint("product", __name__)
 
 
@@ -13,16 +15,20 @@ product_bp = Blueprint("product", __name__)
 # CREATE PRODUCT
 # POST /api/v1/products
 # ============================================================
+
 @product_bp.route("/products", methods=["POST", "OPTIONS"])
 @jwt_required(optional=True)
 def add_product():
 
-    # Handle browser CORS preflight
+    # CORS preflight
     if request.method == "OPTIONS":
         return "", 200
 
     try:
-        # Get logged-in user's ID from JWT
+        # ----------------------------------------------------
+        # GET LOGGED-IN USER
+        # ----------------------------------------------------
+
         current_user_id = get_jwt_identity()
 
         if not current_user_id:
@@ -31,7 +37,6 @@ def add_product():
                 "message": "Please login first"
             }), 401
 
-        # Find user
         user = User.query.get(current_user_id)
 
         if not user:
@@ -45,7 +50,10 @@ def add_product():
                 "error": "Only farmers can add products"
             }), 403
 
-        # Get JSON data
+        # ----------------------------------------------------
+        # READ JSON DATA
+        # ----------------------------------------------------
+
         data = request.get_json(silent=True) or {}
 
         print("\n========== PRODUCT REQUEST ==========")
@@ -54,45 +62,150 @@ def add_product():
         print("DATA:", data)
         print("=====================================\n")
 
-        # ----------------------------------------------------
-        # Read frontend fields
-        # ----------------------------------------------------
+        # ====================================================
+        # TITLE
+        # ====================================================
 
         title = (
             data.get("title")
             or data.get("name")
             or data.get("crop_title")
-            or "Crop"
+            or data.get("cropName")
         )
 
-        category = data.get("category") or "General"
+        if not title:
+            return jsonify({
+                "error": "Product title is required"
+            }), 400
 
-        price_per_unit = (
-            data.get("price_per_unit")
-            or data.get("price")
-            or data.get("cost")
-            or 0
+        # ====================================================
+        # CATEGORY
+        # ====================================================
+
+        category = (
+            data.get("category")
+            or data.get("crop_category")
+            or "General"
         )
 
-        available_quantity = (
-            data.get("available_quantity")
-            or data.get("quantity")
-            or data.get("qty")
-            or 1
+        # ====================================================
+        # PRICE
+        #
+        # Accept:
+        # price_per_unit
+        # pricePerUnit
+        # price
+        # cost
+        # price_per_kg
+        # pricePerKg
+        # ====================================================
+
+        price_per_unit = data.get("price_per_unit")
+
+        if price_per_unit is None:
+            price_per_unit = data.get("pricePerUnit")
+
+        if price_per_unit is None:
+            price_per_unit = data.get("price")
+
+        if price_per_unit is None:
+            price_per_unit = data.get("cost")
+
+        # YOUR FRONTEND USES THIS
+        if price_per_unit is None:
+            price_per_unit = data.get("price_per_kg")
+
+        if price_per_unit is None:
+            price_per_unit = data.get("pricePerKg")
+
+        if price_per_unit is None:
+            return jsonify({
+                "error": "Price is required"
+            }), 400
+
+        # ====================================================
+        # AVAILABLE QUANTITY
+        #
+        # Accept ALL frontend variations
+        # ====================================================
+
+        available_quantity = data.get("available_quantity")
+
+        if available_quantity is None:
+            available_quantity = data.get("availableQuantity")
+
+        # YOUR FRONTEND USES THIS
+        if available_quantity is None:
+            available_quantity = data.get("quantity_available")
+
+        if available_quantity is None:
+            available_quantity = data.get("quantity")
+
+        if available_quantity is None:
+            available_quantity = data.get("quantity_kg")
+
+        if available_quantity is None:
+            available_quantity = data.get("quantityKg")
+
+        if available_quantity is None:
+            available_quantity = data.get("qty")
+
+        if available_quantity is None:
+            available_quantity = data.get("stock")
+
+        if available_quantity is None:
+            return jsonify({
+                "error": "Available quantity is required"
+            }), 400
+
+        # ====================================================
+        # UNIT
+        # ====================================================
+
+        unit = (
+            data.get("unit")
+            or data.get("unit_type")
+            or data.get("unitType")
+            or "kg"
         )
 
-        unit = data.get("unit") or "kg"
+        # ====================================================
+        # LOCATION
+        #
+        # Product model does not have location column.
+        # We store it in description.
+        # ====================================================
+
+        location = (
+            data.get("location")
+            or data.get("farm_location")
+            or data.get("farmLocation")
+        )
 
         description = (
             data.get("description")
-            or data.get("location")
+            or data.get("details")
+            or data.get("about")
         )
 
-        image_url = data.get("image_url")
+        # If frontend sends location but no description,
+        # use location as description.
+        if not description and location:
+            description = location
 
-        # ----------------------------------------------------
-        # Convert numeric values
-        # ----------------------------------------------------
+        # ====================================================
+        # IMAGE
+        # ====================================================
+
+        image_url = (
+            data.get("image_url")
+            or data.get("imageUrl")
+            or data.get("image")
+        )
+
+        # ====================================================
+        # CONVERT PRICE
+        # ====================================================
 
         try:
             price_per_unit = float(price_per_unit)
@@ -101,6 +214,15 @@ def add_product():
                 "error": "Invalid price"
             }), 400
 
+        if price_per_unit < 0:
+            return jsonify({
+                "error": "Price cannot be negative"
+            }), 400
+
+        # ====================================================
+        # CONVERT QUANTITY
+        # ====================================================
+
         try:
             available_quantity = float(available_quantity)
         except (TypeError, ValueError):
@@ -108,25 +230,57 @@ def add_product():
                 "error": "Invalid quantity"
             }), 400
 
-        # ----------------------------------------------------
-        # Create product
-        # ----------------------------------------------------
+        if available_quantity <= 0:
+            return jsonify({
+                "error": "Available quantity must be greater than 0"
+            }), 400
+
+        # ====================================================
+        # CREATE PRODUCT
+        # ====================================================
 
         new_product = Product(
             farmer_id=user.id,
-            title=str(title),
-            category=str(category),
+            title=str(title).strip(),
+            category=str(category).strip(),
             price_per_unit=price_per_unit,
-            unit=str(unit),
+            unit=str(unit).strip(),
             available_quantity=available_quantity,
-            description=str(description) if description else None,
-            image_url=str(image_url) if image_url else None
+
+            description=(
+                str(description).strip()
+                if description
+                else None
+            ),
+
+            image_url=(
+                str(image_url).strip()
+                if image_url
+                else None
+            )
         )
 
         db.session.add(new_product)
         db.session.commit()
 
-        print("PRODUCT CREATED:", new_product.id)
+        # ====================================================
+        # DEBUG
+        # ====================================================
+
+        print("\n========== PRODUCT CREATED ==========")
+        print("ID:", new_product.id)
+        print("TITLE:", new_product.title)
+        print("CATEGORY:", new_product.category)
+        print("PRICE:", new_product.price_per_unit)
+        print("QUANTITY:", new_product.available_quantity)
+        print("UNIT:", new_product.unit)
+        print("DESCRIPTION/LOCATION:", new_product.description)
+        print("IMAGE:", new_product.image_url)
+        print("=====================================\n")
+
+        # ====================================================
+        # RESPONSE
+        # ====================================================
 
         return jsonify({
             "message": "Product added successfully",
@@ -138,7 +292,7 @@ def add_product():
         db.session.rollback()
 
         print("\n========== ADD PRODUCT ERROR ==========")
-        print(str(e))
+        print("ERROR:", str(e))
         print("=======================================\n")
 
         return jsonify({
@@ -151,10 +305,11 @@ def add_product():
 # GET ALL PRODUCTS
 # GET /api/v1/products
 # ============================================================
+
 @product_bp.route("/products", methods=["GET", "OPTIONS"])
 def get_all_products():
 
-    # Handle browser CORS preflight
+    # CORS preflight
     if request.method == "OPTIONS":
         return "", 200
 
@@ -170,7 +325,7 @@ def get_all_products():
     except Exception as e:
 
         print("\n========== GET PRODUCTS ERROR ==========")
-        print(str(e))
+        print("ERROR:", str(e))
         print("========================================\n")
 
         return jsonify({
