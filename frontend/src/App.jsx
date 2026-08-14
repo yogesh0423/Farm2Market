@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import ProtectedRoute from './routes/ProtectedRoute';
-import Navbar from './components/Navbar';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -17,64 +16,61 @@ function App() {
 
         <Routes>
 
-          {/* Marketplace - has its own custom header */}
-          <Route path="/" element={<Marketplace />} />
-          <Route path="/marketplace" element={<Marketplace />} />
+          {/* =========================
+              PUBLIC ROUTES
+          ========================= */}
 
-          {/* Public Routes with Navbar */}
+          <Route path="/" element={<Marketplace />} />
+
+          <Route
+            path="/marketplace"
+            element={<Marketplace />}
+          />
+
           <Route
             path="/login"
-            element={
-              <>
-                <Navbar />
-                <Login />
-              </>
-            }
+            element={<Login />}
           />
 
           <Route
             path="/register"
-            element={
-              <>
-                <Navbar />
-                <Register />
-              </>
-            }
+            element={<Register />}
           />
 
-          {/* Protected Farmer Routes */}
-          <Route element={<ProtectedRoute allowedRole="farmer" />}>
+
+          {/* =========================
+              FARMER ROUTES
+          ========================= */}
+
+          <Route
+            element={
+              <ProtectedRoute allowedRole="farmer" />
+            }
+          >
             <Route
               path="/farmer/dashboard"
-              element={
-                <>
-                  <Navbar />
-                  <FarmerDashboard />
-                </>
-              }
+              element={<FarmerDashboard />}
             />
           </Route>
 
-          {/* Protected Buyer Routes */}
-          <Route element={<ProtectedRoute allowedRole="buyer" />}>
+
+          {/* =========================
+              BUYER ROUTES
+          ========================= */}
+
+          <Route
+            element={
+              <ProtectedRoute allowedRole="buyer" />
+            }
+          >
             <Route
               path="/buyer/dashboard"
-              element={
-                <>
-                  <Navbar />
-                  <BuyerDashboard />
-                </>
-              }
+              element={<BuyerDashboard />}
             />
 
             <Route
               path="/orders"
-              element={
-                <>
-                  <Navbar />
-                  <BuyerDashboard />
-                </>
-              }
+              element={<BuyerDashboard />}
             />
           </Route>
 
