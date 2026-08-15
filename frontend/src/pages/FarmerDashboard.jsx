@@ -94,6 +94,17 @@ const FarmerDashboard = () => {
     }
   };
 
+  const handleOrderStatusChange = (orderId, newStatus) => {
+  setOrders((currentOrders) =>
+    currentOrders.map((order) =>
+      order.id === orderId
+        ? { ...order, status: newStatus }
+        : order
+      )
+    );
+  };
+
+  
   // Dynamic Theme Styling Maps
   const styles = {
     cyber: {
