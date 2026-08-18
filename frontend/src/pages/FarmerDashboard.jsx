@@ -58,9 +58,10 @@ const FarmerDashboard = () => {
   // EDIT PRODUCT STATE
   // ============================================================
 
-  // null means that no product is currently being edited.
-  // When a product is selected, this will contain that product's data.
   const [editingProduct, setEditingProduct] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
 
   const categories = [
     'Vegetables',
@@ -178,12 +179,8 @@ const FarmerDashboard = () => {
   // ============================================================
 
   const handleEditProduct = (product) => {
-    /*
-      We copy the product into editingProduct.
-
-      The spread operator (...) creates a new object instead
-      of directly modifying the product inside products[].
-    */
+    setEditError('');
+    setEditSuccess('');
 
     setEditingProduct({
       ...product
@@ -195,11 +192,99 @@ const FarmerDashboard = () => {
   // ============================================================
 
   const handleCloseEditModal = () => {
+    if (editLoading) return;
+
     setEditingProduct(null);
+    setEditError('');
+    setEditSuccess('');
   };
 
   // ============================================================
-  // ORDER STATUS - FRONTEND ONLY FOR NOW
+  // SAVE EDITED PRODUCT
+  // ============================================================
+
+  const handleSaveProduct = async (e) => {
+    e.preventDefault();
+
+    if (!editingProduct) return;
+
+    setEditLoading(true);
+    setEditError('');
+    setEditSuccess('');
+
+    try {
+      /*
+        We send only the fields that belong to the product.
+
+        parseFloat() converts values coming from input fields
+        from strings into numbers.
+      */
+
+      const updatedProduct = {
+        title: editingProduct.title,
+        category: editingProduct.category,
+        price_per_kg: parseFloat(
+          editingProduct.price_per_kg
+        ),
+        quantity_available: parseFloat(
+          editingProduct.quantity_available
+        ),
+        location: editingProduct.location,
+        image_url: editingProduct.image_url || ''
+      };
+
+      /*
+        PUT means:
+
+        "Update the existing product with this ID."
+
+        Example:
+
+        PUT /products/5
+
+        means we are updating product whose ID is 5.
+      */
+
+      await API.put(
+        `/products/${editingProduct.id}`,
+        updatedProduct
+      );
+
+      setEditSuccess(
+        '✨ Listing updated successfully!'
+      );
+
+      /*
+        Give the user a short success message,
+        then reload the products from the backend.
+      */
+
+      setTimeout(async () => {
+        await fetchDashboardData();
+
+        setEditingProduct(null);
+        setEditSuccess('');
+        setEditLoading(false);
+      }, 800);
+
+    } catch (err) {
+
+      console.error(
+        'Failed to update product:',
+        err
+      );
+
+      setEditError(
+        err.response?.data?.error ||
+        'Failed to update product.'
+      );
+
+      setEditLoading(false);
+    }
+  };
+
+  // ============================================================
+  // ORDER STATUS
   // ============================================================
 
   const handleOrderStatusChange = (
@@ -393,8 +478,6 @@ const FarmerDashboard = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
 
-          {/* Brand */}
-
           <div
             className="flex items-center space-x-3 cursor-pointer"
             onClick={() => navigate('/')}
@@ -432,11 +515,7 @@ const FarmerDashboard = () => {
 
           </div>
 
-          {/* Header Controls */}
-
           <div className="flex items-center space-x-3">
-
-            {/* Theme */}
 
             <div className="flex items-center p-1 rounded-2xl border border-slate-700/30 bg-black/10 backdrop-blur-md">
 
@@ -478,8 +557,6 @@ const FarmerDashboard = () => {
 
             </div>
 
-            {/* Marketplace */}
-
             <button
               onClick={() => navigate('/')}
               className="p-2 text-xs font-bold flex items-center gap-1 opacity-70 hover:opacity-100 transition"
@@ -487,8 +564,6 @@ const FarmerDashboard = () => {
               <ArrowLeft className="w-4 h-4" />
               Marketplace
             </button>
-
-            {/* Logout */}
 
             <button
               onClick={() => {
@@ -512,8 +587,6 @@ const FarmerDashboard = () => {
       ====================================================== */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-
-        {/* Welcome */}
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
 
@@ -700,8 +773,6 @@ const FarmerDashboard = () => {
 
                     <div>
 
-                      {/* Product Image */}
-
                       <div className="relative h-40 bg-black/20 overflow-hidden">
 
                         {item.image_url ? (
@@ -725,8 +796,6 @@ const FarmerDashboard = () => {
                         </span>
 
                       </div>
-
-                      {/* Product Information */}
 
                       <div className="p-5">
 
@@ -773,11 +842,9 @@ const FarmerDashboard = () => {
 
                     </div>
 
-                    {/* Product Actions */}
+                    {/* PRODUCT ACTIONS */}
 
                     <div className="p-5 pt-0 grid grid-cols-2 gap-2">
-
-                      {/* EDIT BUTTON */}
 
                       <button
                         onClick={() =>
@@ -791,8 +858,6 @@ const FarmerDashboard = () => {
                         Edit Listing
 
                       </button>
-
-                      {/* DELETE BUTTON */}
 
                       <button
                         onClick={() =>
@@ -936,8 +1001,6 @@ const FarmerDashboard = () => {
 
                       </div>
 
-                      {/* Order Status */}
-
                       <div className="mt-5 pt-4 border-t border-slate-700/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 
                         <div className="flex items-center gap-2">
@@ -1040,7 +1103,7 @@ const FarmerDashboard = () => {
                 </h3>
 
                 <p className="text-xs opacity-60">
-                  List your crop directly on the open marketplace
+                  List your fresh crop directly on the marketplace.
                 </p>
 
               </div>
@@ -1215,7 +1278,7 @@ const FarmerDashboard = () => {
 
                 <input
                   type="url"
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="https://..."
                   value={newProduct.image_url}
                   onChange={(e) =>
                     setNewProduct({
@@ -1269,8 +1332,6 @@ const FarmerDashboard = () => {
             className={`rounded-3xl max-w-lg w-full p-6 shadow-2xl border relative ${styles.modalBg}`}
           >
 
-            {/* Modal Header */}
-
             <div className="flex justify-between items-start mb-5">
 
               <div>
@@ -1291,20 +1352,40 @@ const FarmerDashboard = () => {
 
               <button
                 onClick={handleCloseEditModal}
-                className="opacity-50 hover:opacity-100 font-bold text-lg"
+                disabled={editLoading}
+                className="opacity-50 hover:opacity-100 font-bold text-lg disabled:opacity-20"
               >
                 ✕
               </button>
 
             </div>
 
-            {/* ==================================================
-                EDIT FORM
-            ================================================== */}
+            {/* EDIT ERROR */}
 
-            <div className="space-y-4">
+            {editError && (
 
-              {/* Crop Title */}
+              <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3 rounded-xl mb-4 text-xs font-medium">
+                {editError}
+              </div>
+
+            )}
+
+            {/* EDIT SUCCESS */}
+
+            {editSuccess && (
+
+              <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-3 rounded-xl mb-4 text-xs font-medium">
+                {editSuccess}
+              </div>
+
+            )}
+
+            <form
+              onSubmit={handleSaveProduct}
+              className="space-y-4"
+            >
+
+              {/* CROP TITLE */}
 
               <div>
 
@@ -1322,11 +1403,12 @@ const FarmerDashboard = () => {
                     })
                   }
                   className={`w-full px-4 py-2.5 border rounded-xl outline-none text-sm font-medium ${styles.modalInput}`}
+                  required
                 />
 
               </div>
 
-              {/* Category + Price */}
+              {/* CATEGORY + PRICE */}
 
               <div className="grid grid-cols-2 gap-3">
 
@@ -1385,13 +1467,14 @@ const FarmerDashboard = () => {
                       })
                     }
                     className={`w-full px-4 py-2.5 border rounded-xl outline-none text-sm font-medium ${styles.modalInput}`}
+                    required
                   />
 
                 </div>
 
               </div>
 
-              {/* Quantity + Location */}
+              {/* QUANTITY + LOCATION */}
 
               <div className="grid grid-cols-2 gap-3">
 
@@ -1403,6 +1486,7 @@ const FarmerDashboard = () => {
 
                   <input
                     type="number"
+                    step="0.01"
                     value={
                       editingProduct.quantity_available ??
                       ''
@@ -1415,6 +1499,7 @@ const FarmerDashboard = () => {
                       })
                     }
                     className={`w-full px-4 py-2.5 border rounded-xl outline-none text-sm font-medium ${styles.modalInput}`}
+                    required
                   />
 
                 </div>
@@ -1437,13 +1522,14 @@ const FarmerDashboard = () => {
                       })
                     }
                     className={`w-full px-4 py-2.5 border rounded-xl outline-none text-sm font-medium ${styles.modalInput}`}
+                    required
                   />
 
                 </div>
 
               </div>
 
-              {/* Image URL */}
+              {/* IMAGE URL */}
 
               <div>
 
@@ -1467,41 +1553,49 @@ const FarmerDashboard = () => {
 
               </div>
 
-              {/* ==================================================
-                  ACTIONS
-              ================================================== */}
+              {/* BUTTONS */}
 
               <div className="flex justify-end gap-2 pt-3">
 
                 <button
                   type="button"
                   onClick={handleCloseEditModal}
-                  className="px-5 py-2.5 border border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-800 transition"
+                  disabled={editLoading}
+                  className="px-5 py-2.5 border border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-800 transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
 
-                {/*
-                  Save is intentionally disabled for this step.
-
-                  We are only implementing the frontend edit UI
-                  right now. The actual update API will be connected
-                  in the next process once the backend endpoint is
-                  available.
-                */}
-
                 <button
-                  type="button"
-                  disabled
-                  className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider bg-slate-700 text-slate-400 cursor-not-allowed"
-                  title="Update API integration will be added in the next step"
+                  type="submit"
+                  disabled={editLoading}
+                  className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 ${styles.btnPrimary} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  Save Changes
+
+                  {editLoading ? (
+
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+
+                      Saving...
+
+                    </>
+
+                  ) : (
+
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+
+                      Save Changes
+                    </>
+
+                  )}
+
                 </button>
 
               </div>
 
-            </div>
+            </form>
 
           </div>
 

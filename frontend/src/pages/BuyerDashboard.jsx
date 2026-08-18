@@ -3,12 +3,41 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import API from '../api/axios';
 
+import {
+  Sprout,
+  ShoppingBag,
+  ArrowLeft,
+  Monitor,
+  Moon,
+  Sun,
+  Package,
+  Truck,
+  Wallet,
+  RefreshCw,
+  Search,
+  CheckCircle2,
+  Clock3,
+  XCircle
+} from 'lucide-react';
+
 const BuyerDashboard = () => {
   const { user } = useContext(AuthContext);
+
+  // ============================================================
+  // STATE
+  // ============================================================
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Same theme system as Farmer Dashboard
+  const [theme, setTheme] = useState('cyber');
+
+  // ============================================================
+  // FETCH BUYER ORDERS
+  // ============================================================
 
   useEffect(() => {
     fetchBuyerOrders();
@@ -17,192 +46,1275 @@ const BuyerDashboard = () => {
   const fetchBuyerOrders = async () => {
     try {
       setLoading(true);
-      // Fetch orders placed by the current logged-in buyer
+      setError('');
+
       const response = await API.get('/orders/my-orders');
-      setOrders(response.data?.orders || response.data || []);
+
+      setOrders(
+        response.data?.orders ||
+        response.data ||
+        []
+      );
+
     } catch (err) {
-      console.error('Error fetching buyer orders:', err);
-      setError('Failed to load order history. Please try again.');
+      console.error(
+        'Error fetching buyer orders:',
+        err
+      );
+
+      setError(
+        'Failed to load order history. Please try again.'
+      );
+
     } finally {
       setLoading(false);
     }
   };
 
-  // Metrics calculations
+  // ============================================================
+  // METRICS
+  // ============================================================
+
   const totalOrders = orders.length;
-  const activeOrders = orders.filter(o => ['Pending', 'Confirmed', 'Processing', 'Shipped'].includes(o.status)).length;
-  const totalSpent = orders.reduce((sum, order) => sum + (Number(order.total_price || order.total) || 0), 0);
 
-  // Filtered orders list
-  const filteredOrders = filterStatus === 'all' 
-    ? orders 
-    : orders.filter(order => order.status?.toLowerCase() === filterStatus.toLowerCase());
+  const activeOrders = orders.filter((order) =>
+    [
+      'pending',
+      'confirmed',
+      'processing',
+      'shipped'
+    ].includes(
+      String(order.status || '').toLowerCase()
+    )
+  ).length;
 
-  // Status badge styling helper
-  const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
+  const totalSpent = orders.reduce(
+    (sum, order) =>
+      sum +
+      (
+        Number(
+          order.total_price ||
+          order.total ||
+          0
+        ) || 0
+      ),
+    0
+  );
+
+  // ============================================================
+  // FILTER ORDERS
+  // ============================================================
+
+  const filteredOrders =
+    filterStatus === 'all'
+      ? orders
+      : orders.filter(
+          (order) =>
+            String(order.status || '').toLowerCase() ===
+            filterStatus.toLowerCase()
+        );
+
+  // ============================================================
+  // STATUS BADGE
+  // ============================================================
+
+  const getStatusConfig = (status) => {
+    const normalizedStatus =
+      String(status || 'pending').toLowerCase();
+
+    switch (normalizedStatus) {
       case 'delivered':
       case 'completed':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        return {
+          label: status || 'Delivered',
+          className:
+            'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+          icon: (
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          )
+        };
+
       case 'shipped':
       case 'processing':
       case 'confirmed':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
-      case 'pending':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        return {
+          label: status,
+          className:
+            'bg-blue-500/10 text-blue-400 border-blue-500/30',
+          icon: (
+            <Truck className="w-3.5 h-3.5" />
+          )
+        };
+
       case 'cancelled':
-        return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'rejected':
+        return {
+          label: status,
+          className:
+            'bg-rose-500/10 text-rose-400 border-rose-500/30',
+          icon: (
+            <XCircle className="w-3.5 h-3.5" />
+          )
+        };
+
       default:
-        return 'bg-gray-800 text-gray-300 border-gray-700';
+        return {
+          label: status || 'Pending',
+          className:
+            'bg-amber-500/10 text-amber-400 border-amber-500/30',
+          icon: (
+            <Clock3 className="w-3.5 h-3.5" />
+          )
+        };
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 px-4 sm:px-6 lg:px-8 py-10 relative overflow-hidden">
-      {/* Background Ambient Glows */}
-      <div className="absolute top-10 right-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
+  // ============================================================
+  // THEME STYLES
+  // ============================================================
 
-      <div className="max-w-7xl mx-auto relative z-10 space-y-8">
-        
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gray-900/60 backdrop-blur-xl border border-gray-800/80 p-6 rounded-2xl">
+  const styles = {
+    cyber: {
+      bg:
+        'bg-[#080d0a] text-slate-100 selection:bg-emerald-500 selection:text-black',
+
+      header:
+        'bg-[#0b130e]/80 border-emerald-900/30 text-white',
+
+      accentText:
+        'text-emerald-400',
+
+      mutedText:
+        'text-slate-400',
+
+      cardBg:
+        'bg-[#0d1711] border-emerald-900/40 shadow-[0_0_30px_rgba(16,185,129,0.08)]',
+
+      statBg:
+        'bg-[#080d0a] border-emerald-900/30',
+
+      tableHeader:
+        'border-emerald-900/30 text-slate-400',
+
+      tableRow:
+        'divide-emerald-900/20',
+
+      rowHover:
+        'hover:bg-emerald-500/5',
+
+      tabActive:
+        'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md font-extrabold',
+
+      tabInactive:
+        'bg-[#0f1a12] text-slate-400 border-emerald-900/40 hover:text-white',
+
+      btnPrimary:
+        'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20',
+
+      input:
+        'bg-[#080d0a] border-emerald-900/50 text-white focus:border-emerald-400',
+
+      logoInner:
+        'bg-[#0d1711]'
+    },
+
+    dark: {
+      bg:
+        'bg-slate-950 text-slate-100 selection:bg-teal-500 selection:text-white',
+
+      header:
+        'bg-slate-900/90 border-slate-800 text-white',
+
+      accentText:
+        'text-teal-400',
+
+      mutedText:
+        'text-slate-400',
+
+      cardBg:
+        'bg-slate-900 border-slate-800 shadow-xl',
+
+      statBg:
+        'bg-slate-950 border-slate-800',
+
+      tableHeader:
+        'border-slate-800 text-slate-400',
+
+      tableRow:
+        'divide-slate-800',
+
+      rowHover:
+        'hover:bg-slate-800/40',
+
+      tabActive:
+        'bg-teal-500 text-slate-950 border-teal-400 shadow-md font-extrabold',
+
+      tabInactive:
+        'bg-slate-900 text-slate-400 border-slate-800 hover:text-white',
+
+      btnPrimary:
+        'bg-teal-500 hover:bg-teal-400 text-slate-950 shadow-teal-500/20',
+
+      input:
+        'bg-slate-950 border-slate-800 text-white focus:border-teal-400',
+
+      logoInner:
+        'bg-slate-900'
+    },
+
+    light: {
+      bg:
+        'bg-slate-50 text-slate-900 selection:bg-emerald-500 selection:text-white',
+
+      header:
+        'bg-white/90 border-slate-200 text-slate-900',
+
+      accentText:
+        'text-emerald-600',
+
+      mutedText:
+        'text-slate-500',
+
+      cardBg:
+        'bg-white border-slate-200/80 shadow-xl shadow-slate-200/50',
+
+      statBg:
+        'bg-slate-50 border-slate-100',
+
+      tableHeader:
+        'border-slate-200 text-slate-500',
+
+      tableRow:
+        'divide-slate-200',
+
+      rowHover:
+        'hover:bg-slate-50',
+
+      tabActive:
+        'bg-emerald-600 text-white border-emerald-600 shadow-md font-extrabold',
+
+      tabInactive:
+        'bg-white text-slate-600 border-slate-200 hover:bg-slate-100',
+
+      btnPrimary:
+        'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20',
+
+      input:
+        'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500',
+
+      logoInner:
+        'bg-white'
+    }
+  }[theme];
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+
+  return (
+    <div
+      className={`
+        min-h-screen
+        font-sans
+        transition-colors
+        duration-300
+        pb-20
+        ${styles.bg}
+      `}
+    >
+
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
+
+      <header
+        className={`
+          backdrop-blur-xl
+          border-b
+          sticky
+          top-0
+          z-30
+          transition-colors
+          ${styles.header}
+        `}
+      >
+
+        <div
+          className="
+            max-w-7xl
+            mx-auto
+            px-4
+            sm:px-6
+            lg:px-8
+            py-3.5
+            flex
+            justify-between
+            items-center
+          "
+        >
+
+          {/* BRAND */}
+
+          <div className="flex items-center space-x-3">
+
+            <div
+              className="
+                w-10
+                h-10
+                rounded-2xl
+                bg-gradient-to-br
+                from-emerald-400
+                via-teal-500
+                to-emerald-700
+                p-[1px]
+                shadow-lg
+                shadow-emerald-500/20
+              "
+            >
+
+              <div
+                className={`
+                  w-full
+                  h-full
+                  rounded-[15px]
+                  flex
+                  items-center
+                  justify-center
+                  ${styles.logoInner}
+                `}
+              >
+
+                <Sprout
+                  className="
+                    w-5
+                    h-5
+                    text-emerald-400
+                  "
+                />
+
+              </div>
+
+            </div>
+
+            <div>
+
+              <span
+                className="
+                  text-xl
+                  font-black
+                  tracking-tight
+                  flex
+                  items-center
+                  gap-1
+                "
+              >
+
+                FARM
+
+                <span className={styles.accentText}>
+                  2
+                </span>
+
+                MARKET
+
+                <span
+                  className="
+                    text-[9px]
+                    font-mono
+                    px-1.5
+                    py-0.5
+                    rounded
+                    border
+                    border-emerald-500/30
+                    text-emerald-400
+                    bg-emerald-500/10
+                  "
+                >
+                  BUYER NODE
+                </span>
+
+              </span>
+
+            </div>
+
+          </div>
+
+          {/* HEADER CONTROLS */}
+
+          <div className="flex items-center gap-2 sm:gap-3">
+
+            {/* THEME SWITCHER */}
+
+            <div
+              className="
+                flex
+                items-center
+                p-1
+                rounded-2xl
+                border
+                border-slate-700/30
+                bg-black/10
+                backdrop-blur-md
+              "
+            >
+
+              <button
+                onClick={() => setTheme('cyber')}
+                className={`
+                  p-1.5
+                  rounded-xl
+                  transition
+                  ${
+                    theme === 'cyber'
+                      ? 'bg-emerald-500 text-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }
+                `}
+                title="Cyber-Agri Mode"
+              >
+
+                <Monitor className="w-3.5 h-3.5" />
+
+              </button>
+
+              <button
+                onClick={() => setTheme('dark')}
+                className={`
+                  p-1.5
+                  rounded-xl
+                  transition
+                  ${
+                    theme === 'dark'
+                      ? 'bg-teal-500 text-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }
+                `}
+                title="Dark Mode"
+              >
+
+                <Moon className="w-3.5 h-3.5" />
+
+              </button>
+
+              <button
+                onClick={() => setTheme('light')}
+                className={`
+                  p-1.5
+                  rounded-xl
+                  transition
+                  ${
+                    theme === 'light'
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-700'
+                  }
+                `}
+                title="Light Mode"
+              >
+
+                <Sun className="w-3.5 h-3.5" />
+
+              </button>
+
+            </div>
+
+            {/* MARKETPLACE */}
+
+            <Link
+              to="/"
+              className="
+                p-2
+                text-xs
+                font-bold
+                flex
+                items-center
+                gap-1
+                opacity-70
+                hover:opacity-100
+                transition
+              "
+            >
+
+              <ArrowLeft className="w-4 h-4" />
+
+              <span className="hidden sm:inline">
+                Marketplace
+              </span>
+
+            </Link>
+
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* ======================================================
+          MAIN
+      ====================================================== */}
+
+      <main
+        className="
+          max-w-7xl
+          mx-auto
+          px-4
+          sm:px-6
+          lg:px-8
+          pt-8
+        "
+      >
+
+        {/* ====================================================
+            PAGE INTRO
+        ==================================================== */}
+
+        <div
+          className="
+            flex
+            flex-col
+            md:flex-row
+            md:items-center
+            md:justify-between
+            gap-4
+            mb-8
+          "
+        >
+
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-200">
+
+            <h1
+              className="
+                text-3xl
+                font-black
+                tracking-tight
+                flex
+                items-center
+                gap-2
+              "
+            >
               Welcome back, {user?.name || 'Buyer'} 👋
             </h1>
-            <p className="text-gray-400 text-sm mt-1">
-              Track your fresh produce purchases and order history from local farmers.
+
+            <p
+              className={`
+                text-sm
+                mt-1
+                ${styles.mutedText}
+              `}
+            >
+              Track your fresh produce purchases and
+              order history from local farmers.
             </p>
+
           </div>
 
-          <Link
-            to="/"
-            className="self-start md:self-auto inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-[0.98]"
+          <button
+            onClick={fetchBuyerOrders}
+            className={`
+              self-start
+              md:self-auto
+              inline-flex
+              items-center
+              gap-2
+              px-4
+              py-2.5
+              rounded-xl
+              text-xs
+              font-bold
+              transition
+              border
+              border-emerald-500/30
+              ${styles.btnPrimary}
+            `}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            Browse Marketplace
-          </Link>
+
+            <RefreshCw
+              className={`
+                w-3.5
+                h-3.5
+                ${loading ? 'animate-spin' : ''}
+              `}
+            />
+
+            Refresh Orders
+
+          </button>
+
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Orders</span>
-              <span className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">📦</span>
+        {/* ====================================================
+            STATS
+        ==================================================== */}
+
+        <div
+          className="
+            grid
+            grid-cols-1
+            sm:grid-cols-3
+            gap-4
+            mb-8
+          "
+        >
+
+          {/* TOTAL ORDERS */}
+
+          <div
+            className={`
+              p-5
+              rounded-2xl
+              border
+              ${styles.cardBg}
+            `}
+          >
+
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                mb-3
+              "
+            >
+
+              <span
+                className="
+                  text-[10px]
+                  font-mono
+                  font-bold
+                  uppercase
+                  tracking-wider
+                  opacity-60
+                "
+              >
+                Total Orders
+              </span>
+
+              <div
+                className="
+                  p-2
+                  rounded-xl
+                  bg-emerald-500/10
+                  text-emerald-400
+                "
+              >
+
+                <Package className="w-4 h-4" />
+
+              </div>
+
             </div>
-            <div className="text-3xl font-black text-gray-100 mt-3">{totalOrders}</div>
+
+            <span className="text-3xl font-black">
+              {totalOrders}
+            </span>
+
           </div>
 
-          <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Orders</span>
-              <span className="p-2 bg-blue-500/10 text-blue-400 rounded-xl">🚚</span>
+          {/* ACTIVE ORDERS */}
+
+          <div
+            className={`
+              p-5
+              rounded-2xl
+              border
+              ${styles.cardBg}
+            `}
+          >
+
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                mb-3
+              "
+            >
+
+              <span
+                className="
+                  text-[10px]
+                  font-mono
+                  font-bold
+                  uppercase
+                  tracking-wider
+                  opacity-60
+                "
+              >
+                Active Orders
+              </span>
+
+              <div
+                className="
+                  p-2
+                  rounded-xl
+                  bg-blue-500/10
+                  text-blue-400
+                "
+              >
+
+                <Truck className="w-4 h-4" />
+
+              </div>
+
             </div>
-            <div className="text-3xl font-black text-blue-400 mt-3">{activeOrders}</div>
+
+            <span className="text-3xl font-black text-blue-400">
+              {activeOrders}
+            </span>
+
           </div>
 
-          <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Spent</span>
-              <span className="p-2 bg-teal-500/10 text-teal-400 rounded-xl">💰</span>
+          {/* TOTAL SPENT */}
+
+          <div
+            className={`
+              p-5
+              rounded-2xl
+              border
+              ${styles.cardBg}
+            `}
+          >
+
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                mb-3
+              "
+            >
+
+              <span
+                className="
+                  text-[10px]
+                  font-mono
+                  font-bold
+                  uppercase
+                  tracking-wider
+                  opacity-60
+                "
+              >
+                Total Spent
+              </span>
+
+              <div
+                className="
+                  p-2
+                  rounded-xl
+                  bg-teal-500/10
+                  text-teal-400
+                "
+              >
+
+                <Wallet className="w-4 h-4" />
+
+              </div>
+
             </div>
-            <div className="text-3xl font-black text-emerald-400 mt-3">₹{totalSpent.toFixed(2)}</div>
+
+            <span
+              className={`
+                text-3xl
+                font-black
+                ${styles.accentText}
+              `}
+            >
+              ₹{totalSpent.toFixed(2)}
+            </span>
+
           </div>
+
         </div>
 
-        {/* Order History Table */}
-        <div className="bg-gray-900/60 backdrop-blur-xl border border-gray-800/80 rounded-2xl p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-xl font-bold text-gray-100">My Orders</h2>
+        {/* ====================================================
+            ORDER HISTORY
+        ==================================================== */}
 
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
-              {['all', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => (
+        <div
+          className={`
+            border
+            rounded-3xl
+            p-5
+            sm:p-6
+            space-y-6
+            ${styles.cardBg}
+          `}
+        >
+
+          {/* HEADER */}
+
+          <div
+            className="
+              flex
+              flex-col
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+              gap-4
+            "
+          >
+
+            <div>
+
+              <h2
+                className="
+                  text-xl
+                  font-black
+                  tracking-tight
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+
+                <ShoppingBag
+                  className="
+                    w-5
+                    h-5
+                    text-emerald-400
+                  "
+                />
+
+                My Orders
+
+              </h2>
+
+              <p
+                className={`
+                  text-xs
+                  mt-1
+                  ${styles.mutedText}
+                `}
+              >
+                View and track all your marketplace purchases.
+              </p>
+
+            </div>
+
+            {/* FILTERS */}
+
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+                overflow-x-auto
+                pb-1
+              "
+            >
+
+              {[
+                'all',
+                'pending',
+                'confirmed',
+                'shipped',
+                'delivered',
+                'cancelled'
+              ].map((status) => (
+
                 <button
                   key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-all whitespace-nowrap ${
-                    filterStatus === status
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-gray-800/60 text-gray-400 hover:text-gray-200 border border-transparent'
-                  }`}
+                  onClick={() =>
+                    setFilterStatus(status)
+                  }
+                  className={`
+                    px-3
+                    py-1.5
+                    text-[11px]
+                    font-bold
+                    rounded-lg
+                    capitalize
+                    transition-all
+                    whitespace-nowrap
+                    border
+                    ${
+                      filterStatus === status
+                        ? styles.tabActive
+                        : styles.tabInactive
+                    }
+                  `}
                 >
                   {status}
                 </button>
+
               ))}
+
             </div>
+
           </div>
 
+          {/* ERROR */}
+
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-xl text-sm">
-              {error}
+
+            <div
+              className="
+                bg-rose-500/10
+                border
+                border-rose-500/40
+                text-rose-400
+                p-4
+                rounded-xl
+                text-sm
+                flex
+                items-center
+                justify-between
+                gap-3
+              "
+            >
+
+              <span>
+                {error}
+              </span>
+
+              <button
+                onClick={fetchBuyerOrders}
+                className="
+                  text-xs
+                  font-bold
+                  underline
+                  hover:no-underline
+                "
+              >
+                Retry
+              </button>
+
             </div>
+
           )}
+
+          {/* ==================================================
+              LOADING
+          ================================================== */}
 
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-emerald-400">
-              <svg className="animate-spin h-8 w-8" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
+
+            <div
+              className="
+                flex
+                flex-col
+                items-center
+                justify-center
+                py-16
+                gap-3
+              "
+            >
+
+              <div
+                className="
+                  w-9
+                  h-9
+                  border-4
+                  border-emerald-900
+                  border-t-emerald-400
+                  rounded-full
+                  animate-spin
+                "
+              />
+
+              <p
+                className="
+                  text-[10px]
+                  font-mono
+                  tracking-wider
+                  opacity-60
+                "
+              >
+                LOADING ORDER HISTORY...
+              </p>
+
             </div>
+
           ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-12 space-y-3">
-              <div className="text-4xl">🌾</div>
-              <p className="text-gray-400 text-sm">No orders found matching this status.</p>
-              <Link to="/" className="inline-block text-xs font-semibold text-emerald-400 hover:underline">
-                Explore products in the marketplace →
+
+            /* ==================================================
+                EMPTY STATE
+            ================================================== */
+
+            <div
+              className="
+                text-center
+                py-16
+                space-y-4
+              "
+            >
+
+              <div
+                className="
+                  w-16
+                  h-16
+                  rounded-2xl
+                  bg-emerald-500/10
+                  flex
+                  items-center
+                  justify-center
+                  mx-auto
+                  text-3xl
+                "
+              >
+                🌾
+              </div>
+
+              <div>
+
+                <h3 className="font-bold text-base">
+                  No Orders Found
+                </h3>
+
+                <p
+                  className={`
+                    text-xs
+                    mt-1
+                    ${styles.mutedText}
+                  `}
+                >
+                  {filterStatus === 'all'
+                    ? 'You have not placed any orders yet.'
+                    : `No ${filterStatus} orders found.`}
+                </p>
+
+              </div>
+
+              <Link
+                to="/"
+                className={`
+                  inline-flex
+                  items-center
+                  gap-2
+                  px-5
+                  py-2.5
+                  rounded-xl
+                  text-xs
+                  font-bold
+                  transition
+                  ${styles.btnPrimary}
+                `}
+              >
+
+                <Search className="w-3.5 h-3.5" />
+
+                Explore Marketplace
+
               </Link>
+
             </div>
+
           ) : (
+
+            /* ==================================================
+                ORDER TABLE
+            ================================================== */
+
             <div className="overflow-x-auto">
+
               <table className="w-full text-left border-collapse">
+
                 <thead>
-                  <tr className="border-b border-gray-800 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    <th className="py-4 px-4">Order ID</th>
-                    <th className="py-4 px-4">Product / Details</th>
-                    <th className="py-4 px-4">Quantity</th>
-                    <th className="py-4 px-4">Total Price</th>
-                    <th className="py-4 px-4">Status</th>
-                    <th className="py-4 px-4 text-right">Date</th>
+
+                  <tr
+                    className={`
+                      border-b
+                      text-[10px]
+                      font-mono
+                      font-bold
+                      uppercase
+                      tracking-wider
+                      ${styles.tableHeader}
+                    `}
+                  >
+
+                    <th className="py-4 px-4">
+                      Order ID
+                    </th>
+
+                    <th className="py-4 px-4">
+                      Product / Details
+                    </th>
+
+                    <th className="py-4 px-4">
+                      Quantity
+                    </th>
+
+                    <th className="py-4 px-4">
+                      Total Price
+                    </th>
+
+                    <th className="py-4 px-4">
+                      Status
+                    </th>
+
+                    <th className="py-4 px-4 text-right">
+                      Date
+                    </th>
+
                   </tr>
+
                 </thead>
-                <tbody className="divide-y divide-gray-800/60 text-sm">
-                  {filteredOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-800/30 transition-colors">
-                      <td className="py-4 px-4 font-mono text-emerald-400 text-xs">
-                        #{order.id?.toString().slice(-6) || order.order_id}
-                      </td>
-                      <td className="py-4 px-4 font-medium text-gray-200">
-                        {order.product_name || order.product?.name || 'Fresh Produce'}
-                      </td>
-                      <td className="py-4 px-4 text-gray-300">
-                        {order.quantity} {order.unit || 'kg'}
-                      </td>
-                      <td className="py-4 px-4 font-bold text-gray-100">
-                        ₹{(Number(order.total_price || order.total) || 0).toFixed(2)}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(order.status)}`}>
-                          {order.status || 'Pending'}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-right text-xs text-gray-400">
-                        {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'Recent'}
-                      </td>
-                    </tr>
-                  ))}
+
+                <tbody
+                  className={`
+                    divide-y
+                    text-sm
+                    ${styles.tableRow}
+                  `}
+                >
+
+                  {filteredOrders.map((order) => {
+
+                    const status =
+                      getStatusConfig(
+                        order.status
+                      );
+
+                    return (
+
+                      <tr
+                        key={order.id}
+                        className={`
+                          transition-colors
+                          ${styles.rowHover}
+                        `}
+                      >
+
+                        {/* ORDER ID */}
+
+                        <td
+                          className="
+                            py-4
+                            px-4
+                            font-mono
+                            text-emerald-400
+                            text-xs
+                          "
+                        >
+                          #
+                          {order.id
+                            ?.toString()
+                            .slice(-6) ||
+                            order.order_id}
+                        </td>
+
+                        {/* PRODUCT */}
+
+                        <td
+                          className="
+                            py-4
+                            px-4
+                            font-semibold
+                          "
+                        >
+
+                          {order.product_name ||
+                            order.product?.name ||
+                            'Fresh Produce'}
+
+                        </td>
+
+                        {/* QUANTITY */}
+
+                        <td
+                          className="
+                            py-4
+                            px-4
+                            opacity-80
+                          "
+                        >
+
+                          {order.quantity}
+
+                          {' '}
+
+                          {order.unit || 'kg'}
+
+                        </td>
+
+                        {/* TOTAL */}
+
+                        <td
+                          className="
+                            py-4
+                            px-4
+                            font-black
+                          "
+                        >
+
+                          ₹
+                          {(
+                            Number(
+                              order.total_price ||
+                              order.total ||
+                              0
+                            ) || 0
+                          ).toFixed(2)}
+
+                        </td>
+
+                        {/* STATUS */}
+
+                        <td className="py-4 px-4">
+
+                          <span
+                            className={`
+                              inline-flex
+                              items-center
+                              gap-1.5
+                              px-3
+                              py-1.5
+                              text-[10px]
+                              font-black
+                              uppercase
+                              tracking-wider
+                              rounded-full
+                              border
+                              ${status.className}
+                            `}
+                          >
+
+                            {status.icon}
+
+                            {status.label}
+
+                          </span>
+
+                        </td>
+
+                        {/* DATE */}
+
+                        <td
+                          className={`
+                            py-4
+                            px-4
+                            text-right
+                            text-xs
+                            ${styles.mutedText}
+                          `}
+                        >
+
+                          {order.created_at
+                            ? new Date(
+                                order.created_at
+                              ).toLocaleDateString()
+                            : 'Recent'}
+
+                        </td>
+
+                      </tr>
+
+                    );
+
+                  })}
+
                 </tbody>
+
               </table>
+
             </div>
+
           )}
+
         </div>
 
-      </div>
+      </main>
+
     </div>
   );
 };
