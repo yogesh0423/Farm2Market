@@ -349,6 +349,85 @@ const FarmerDashboard = () => {
   };
 
   // ============================================================
+  // MARKET ANALYTICS
+  // ============================================================
+  // These values are calculated from the orders already fetched
+  // from the backend. No new backend API is required.
+  const totalRevenue = orders.reduce(
+    (sum, order) => sum + (Number(order.total_price) || 0),
+    0
+  );
+
+  const pendingOrders = orders.filter(
+    (order) =>
+      String(order.status || 'pending').toLowerCase() === 'pending'
+  ).length;
+
+  const confirmedOrders = orders.filter(
+    (order) =>
+      String(order.status || '').toLowerCase() === 'confirmed'
+  ).length;
+
+  const completedOrders = orders.filter((order) =>
+    ['delivered', 'completed'].includes(
+      String(order.status || '').toLowerCase()
+    )
+  ).length;
+
+  const totalQuantitySold = orders.reduce(
+    (sum, order) => sum + (Number(order.quantity_kg) || 0),
+    0
+  );
+
+  const averageOrderValue =
+    orders.length > 0 ? totalRevenue / orders.length : 0;
+
+  // ============================================================
+  // PRODUCT PERFORMANCE
+  // ============================================================
+  // Group existing orders by product and calculate quantity,
+  // revenue, and order count entirely on the frontend.
+  const productPerformance = Object.values(
+    orders.reduce((acc, order) => {
+      const productName =
+        order.product_title ||
+        order.product_name ||
+        order.product?.title ||
+        'Unknown Product';
+
+      if (!acc[productName]) {
+        acc[productName] = {
+          name: productName,
+          quantity: 0,
+          revenue: 0,
+          orderCount: 0
+        };
+      }
+
+      acc[productName].quantity +=
+        Number(order.quantity_kg) || 0;
+
+      acc[productName].revenue +=
+        Number(order.total_price) || 0;
+
+      acc[productName].orderCount += 1;
+
+      return acc;
+    }, {})
+  )
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, 5);
+
+  const maxProductQuantity =
+    productPerformance.length > 0
+      ? Math.max(
+          ...productPerformance.map(
+            (product) => product.quantity
+          )
+        )
+      : 0;
+
+  // ============================================================
   // THEME STYLES
   // ============================================================
 
@@ -613,73 +692,152 @@ const FarmerDashboard = () => {
         </div>
 
         {/* ====================================================
-            STATS
+            MARKET ANALYTICS SNAPSHOT
         ==================================================== */}
+        <section className="mb-8">
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-
-          <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
-
-            <div className="flex justify-between items-center mb-2">
-
-              <span className="text-[10px] font-mono font-bold uppercase opacity-50">
-                Active Crops
-              </span>
-
-              <Package className="w-4 h-4 text-emerald-400" />
-
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+                Market Analytics
+              </p>
+              <h2 className="text-xl font-black tracking-tight mt-1">
+                Business Snapshot
+              </h2>
+              <p className="text-xs opacity-60 mt-1">
+                Key sales metrics calculated from your incoming orders.
+              </p>
             </div>
 
-            <span className="text-2xl font-black">
-              {products.length}
-            </span>
+            <TrendingUp className="w-5 h-5 text-emerald-400 opacity-70" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {/* ACTIVE CROPS */}
+            <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-mono font-bold uppercase opacity-50">
+                  Active Crops
+                </span>
+                <Package className="w-4 h-4 text-emerald-400" />
+              </div>
+
+              <span className="text-2xl font-black">
+                {products.length}
+              </span>
+
+              <p className="text-[10px] opacity-50 mt-1">
+                Current listings
+              </p>
+            </div>
+
+            {/* TOTAL ORDERS */}
+            <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-mono font-bold uppercase opacity-50">
+                  Total Orders
+                </span>
+                <ShoppingBag className="w-4 h-4 text-emerald-400" />
+              </div>
+
+              <span className="text-2xl font-black">
+                {orders.length}
+              </span>
+
+              <p className="text-[10px] opacity-50 mt-1">
+                {pendingOrders} pending
+              </p>
+            </div>
+
+            {/* TOTAL QUANTITY */}
+            <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-mono font-bold uppercase opacity-50">
+                  Quantity Sold
+                </span>
+                <Layers className="w-4 h-4 text-emerald-400" />
+              </div>
+
+              <span className="text-2xl font-black">
+                {totalQuantitySold.toFixed(2)} kg
+              </span>
+
+              <p className="text-[10px] opacity-50 mt-1">
+                Across all orders
+              </p>
+            </div>
+
+            {/* REVENUE */}
+            <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-mono font-bold uppercase opacity-50">
+                  Gross Revenue
+                </span>
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+              </div>
+
+              <span className="text-2xl font-black text-emerald-400">
+                ₹{totalRevenue.toFixed(2)}
+              </span>
+
+              <p className="text-[10px] opacity-50 mt-1">
+                Avg. ₹{averageOrderValue.toFixed(2)} / order
+              </p>
+            </div>
 
           </div>
 
-          <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
+          {/* ORDER STATUS BREAKDOWN */}
+          <div className={`mt-4 p-5 rounded-2xl border ${styles.cardBg}`}>
 
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-black">
+                  Order Status Breakdown
+                </h3>
+                <p className="text-[10px] opacity-50 mt-1">
+                  Current status of incoming buyer orders.
+                </p>
+              </div>
 
-              <span className="text-[10px] font-mono font-bold uppercase opacity-50">
-                Received Orders
-              </span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            </div>
 
-              <ShoppingBag className="w-4 h-4 text-emerald-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+              <div className={`p-3 rounded-xl border ${styles.statBg}`}>
+                <p className="text-[9px] uppercase font-mono opacity-50">
+                  Pending
+                </p>
+                <p className="text-lg font-black text-amber-400 mt-1">
+                  {pendingOrders}
+                </p>
+              </div>
+
+              <div className={`p-3 rounded-xl border ${styles.statBg}`}>
+                <p className="text-[9px] uppercase font-mono opacity-50">
+                  Confirmed
+                </p>
+                <p className="text-lg font-black text-emerald-400 mt-1">
+                  {confirmedOrders}
+                </p>
+              </div>
+
+              <div className={`p-3 rounded-xl border ${styles.statBg}`}>
+                <p className="text-[9px] uppercase font-mono opacity-50">
+                  Completed
+                </p>
+                <p className="text-lg font-black text-teal-400 mt-1">
+                  {completedOrders}
+                </p>
+              </div>
 
             </div>
 
-            <span className="text-2xl font-black">
-              {orders.length}
-            </span>
-
           </div>
 
-          <div className={`p-5 rounded-2xl border ${styles.cardBg}`}>
-
-            <div className="flex justify-between items-center mb-2">
-
-              <span className="text-[10px] font-mono font-bold uppercase opacity-50">
-                Gross Revenue
-              </span>
-
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-
-            </div>
-
-            <span className="text-2xl font-black text-emerald-400">
-              ₹
-              {orders
-                .reduce(
-                  (sum, ord) =>
-                    sum + (ord.total_price || 0),
-                  0
-                )
-                .toFixed(2)}
-            </span>
-
-          </div>
-
-        </div>
+        </section>
 
         {/* ====================================================
             TABS
