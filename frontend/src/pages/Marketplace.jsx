@@ -4,6 +4,7 @@ import { LanguageContext } from '../context/LanguageContext';
 import { AuthContext } from '../context/AuthContext';
 import API from '../api/axios';
 import LanguageSelector from '../components/LanguageSelector';
+import FarmerContactModal from '../components/FarmerContactModal';
 
 import {
   Search,
@@ -53,6 +54,9 @@ const Marketplace = () => {
   const [theme, setTheme] = useState('cyber');
 
   const [selectedProduct, setSelectedProduct] =
+    useState(null);
+
+  const [contactFarmer, setContactFarmer] =
     useState(null);
 
   const [quantity, setQuantity] = useState(1);
@@ -1932,6 +1936,47 @@ const Marketplace = () => {
 
                   </button>
 
+
+                  <button
+                    type="button"
+                    onClick={() => {
+
+                      if (!token) {
+
+                        navigate('/login');
+
+                        return;
+                      }
+
+                      setContactFarmer(item);
+
+                    }}
+                    className="
+                      w-full
+                      mt-2
+                      py-3
+                      rounded-2xl
+                      text-xs
+                      font-black
+                      uppercase
+                      tracking-wider
+                      flex
+                      items-center
+                      justify-center
+                      gap-2
+                      transition-all
+                      border
+                      border-emerald-500/30
+                      text-emerald-400
+                      hover:bg-emerald-500/10
+                      hover:border-emerald-400
+                    "
+                  >
+
+                    Contact Farmer
+
+                  </button>
+
                 </div>
 
               </div>
@@ -1943,6 +1988,28 @@ const Marketplace = () => {
         )}
 
       </main>
+
+
+      {/* ======================================================
+          FARMER CONTACT MODAL
+      ====================================================== */}
+
+      {contactFarmer && (
+
+        <FarmerContactModal
+          farmerName={
+            contactFarmer.farmer_name
+          }
+          productTitle={
+            contactFarmer.title
+          }
+          theme={theme}
+          onClose={() =>
+            setContactFarmer(null)
+          }
+        />
+
+      )}
 
 
       {/* ======================================================
