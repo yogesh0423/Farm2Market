@@ -4,6 +4,10 @@ import { AuthContext } from '../context/AuthContext';
 import API from '../api/axios';
 
 import {
+  getConversations
+} from '../utils/conversationStorage';
+
+import {
   Sprout,
   ShoppingBag,
   ArrowLeft,
@@ -33,9 +37,8 @@ const BuyerDashboard = () => {
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Frontend-only conversation UI for now.
-  // Actual conversations will be connected to the backend later.
-  const [conversations] = useState([]);
+  const [conversations, setConversations] =
+    useState([]);
 
   // Same theme system as Farmer Dashboard
   const [theme, setTheme] = useState('cyber');
@@ -46,7 +49,12 @@ const BuyerDashboard = () => {
 
   useEffect(() => {
     fetchBuyerOrders();
+    loadConversations();
   }, []);
+
+  const loadConversations = () => {
+    setConversations(getConversations());
+  };
 
   const fetchBuyerOrders = async () => {
     try {
@@ -1004,11 +1012,17 @@ const BuyerDashboard = () => {
 
             <div className="mt-6 space-y-3">
 
-              {conversations.map((conversation) => (
+              {conversations.map((conversation) => {
 
-                <button
+                const lastMessage =
+                  conversation.messages?.[
+                    conversation.messages.length - 1
+                  ];
+
+                return (
+
+                <div
                   key={conversation.id}
-                  type="button"
                   className={`
                     w-full
                     text-left
@@ -1060,7 +1074,7 @@ const BuyerDashboard = () => {
                             ${styles.mutedText}
                           `}
                         >
-                          {conversation.time}
+                          {conversation.messages?.length || 0} msg
                         </span>
 
                       </div>
@@ -1075,16 +1089,18 @@ const BuyerDashboard = () => {
                       >
                         {conversation.productTitle}
                         {' · '}
-                        {conversation.lastMessage}
+                        {lastMessage?.text || 'Conversation started.'}
                       </p>
 
                     </div>
 
                   </div>
 
-                </button>
+                </div>
 
-              ))}
+                );
+
+              })}
 
             </div>
 

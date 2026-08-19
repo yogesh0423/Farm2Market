@@ -5,6 +5,10 @@ import { AuthContext } from '../context/AuthContext';
 import API from '../api/axios';
 import LanguageSelector from '../components/LanguageSelector';
 import FarmerContactModal from '../components/FarmerContactModal';
+import {
+  createConversationId,
+  upsertConversation
+} from '../utils/conversationStorage';
 
 import {
   Search,
@@ -1948,6 +1952,19 @@ const Marketplace = () => {
                         return;
                       }
 
+                      const conversationId =
+                        createConversationId(
+                          item.farmer_name,
+                          item.title
+                        );
+
+                      upsertConversation({
+                        id: conversationId,
+                        farmerName: item.farmer_name,
+                        productTitle: item.title,
+                        buyerName: user?.name || 'Buyer'
+                      });
+
                       setContactFarmer(item);
 
                     }}
@@ -2002,6 +2019,9 @@ const Marketplace = () => {
           }
           productTitle={
             contactFarmer.title
+          }
+          buyerName={
+            user?.name || 'Buyer'
           }
           theme={theme}
           onClose={() =>
