@@ -123,9 +123,9 @@ The project aims to reduce dependency on traditional intermediaries while provid
 | 🛒 Buyer Module | ✅ Completed |
 | 🌾 Product Management | ✅ Completed |
 | 📦 Order Management | ✅ Completed |
-| 💬 Buyer–Farmer Communication | 🚧 In Progress |
+| 💬 Buyer–Farmer Communication | ✅ Completed |
 | 📊 Market Analytics | 🚧 In Progress |
-| 🔍 Product Search | ⬜ Planned |
+| 🔍 Product Search | 🚧 In Progress |
 | 🧪 API Testing | ⬜ Planned |
 | 📚 API Documentation | ⬜ Planned |
 | 🐳 Docker Deployment | ⬜ Planned |
