@@ -15,6 +15,7 @@ import {
   Wallet,
   RefreshCw,
   Search,
+  MessageCircle,
   CheckCircle2,
   Clock3,
   XCircle
@@ -31,6 +32,10 @@ const BuyerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Frontend-only conversation UI for now.
+  // Actual conversations will be connected to the backend later.
+  const [conversations] = useState([]);
 
   // Same theme system as Farmer Dashboard
   const [theme, setTheme] = useState('cyber');
@@ -824,6 +829,269 @@ const BuyerDashboard = () => {
           </div>
 
         </div>
+
+        {/* ====================================================
+            MY CONVERSATIONS
+        ==================================================== */}
+
+        <div
+          className={`
+            border
+            rounded-3xl
+            p-5
+            sm:p-6
+            mb-8
+            ${styles.cardBg}
+          `}
+        >
+
+          <div
+            className="
+              flex
+              flex-col
+              sm:flex-row
+              sm:items-center
+              sm:justify-between
+              gap-4
+            "
+          >
+
+            <div>
+
+              <h2
+                className="
+                  text-xl
+                  font-black
+                  tracking-tight
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+
+                <MessageCircle
+                  className="
+                    w-5
+                    h-5
+                    text-emerald-400
+                  "
+                />
+
+                My Conversations
+
+              </h2>
+
+              <p
+                className={`
+                  text-xs
+                  mt-1
+                  ${styles.mutedText}
+                `}
+              >
+                Connect directly with farmers about their produce.
+              </p>
+
+            </div>
+
+            <Link
+              to="/"
+              className={`
+                self-start
+                sm:self-auto
+                inline-flex
+                items-center
+                gap-2
+                px-4
+                py-2.5
+                rounded-xl
+                text-xs
+                font-bold
+                transition
+                ${styles.btnPrimary}
+              `}
+            >
+
+              <Search className="w-3.5 h-3.5" />
+
+              Find a Farmer
+
+            </Link>
+
+          </div>
+
+          {conversations.length === 0 ? (
+
+            <div
+              className="
+                mt-6
+                border
+                border-dashed
+                border-emerald-500/20
+                rounded-2xl
+                py-10
+                px-5
+                text-center
+              "
+            >
+
+              <div
+                className="
+                  w-14
+                  h-14
+                  rounded-2xl
+                  bg-emerald-500/10
+                  flex
+                  items-center
+                  justify-center
+                  mx-auto
+                  mb-4
+                "
+              >
+
+                <MessageCircle
+                  className="
+                    w-6
+                    h-6
+                    text-emerald-400
+                  "
+                />
+
+              </div>
+
+              <h3 className="font-bold text-sm">
+                No Conversations Yet
+              </h3>
+
+              <p
+                className={`
+                  text-xs
+                  mt-1
+                  max-w-md
+                  mx-auto
+                  ${styles.mutedText}
+                `}
+              >
+                Your conversations with farmers will appear here
+                after you contact a farmer from the marketplace.
+              </p>
+
+              <Link
+                to="/"
+                className={`
+                  inline-flex
+                  items-center
+                  gap-2
+                  mt-5
+                  px-5
+                  py-2.5
+                  rounded-xl
+                  text-xs
+                  font-bold
+                  transition
+                  ${styles.btnPrimary}
+                `}
+              >
+
+                <ShoppingBag className="w-3.5 h-3.5" />
+
+                Browse Marketplace
+
+              </Link>
+
+            </div>
+
+          ) : (
+
+            <div className="mt-6 space-y-3">
+
+              {conversations.map((conversation) => (
+
+                <button
+                  key={conversation.id}
+                  type="button"
+                  className={`
+                    w-full
+                    text-left
+                    p-4
+                    rounded-2xl
+                    border
+                    transition
+                    ${styles.statBg}
+                    ${styles.rowHover}
+                  `}
+                >
+
+                  <div className="flex items-center gap-3">
+
+                    <div
+                      className="
+                        w-10
+                        h-10
+                        rounded-xl
+                        bg-emerald-500/10
+                        flex
+                        items-center
+                        justify-center
+                        shrink-0
+                      "
+                    >
+
+                      <MessageCircle
+                        className="
+                          w-4
+                          h-4
+                          text-emerald-400
+                        "
+                      />
+
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+
+                      <div className="flex items-center justify-between gap-3">
+
+                        <p className="text-sm font-bold truncate">
+                          {conversation.farmerName}
+                        </p>
+
+                        <span
+                          className={`
+                            text-[10px]
+                            ${styles.mutedText}
+                          `}
+                        >
+                          {conversation.time}
+                        </span>
+
+                      </div>
+
+                      <p
+                        className={`
+                          text-xs
+                          mt-1
+                          truncate
+                          ${styles.mutedText}
+                        `}
+                      >
+                        {conversation.productTitle}
+                        {' · '}
+                        {conversation.lastMessage}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </button>
+
+              ))}
+
+            </div>
+
+          )}
+
+        </div>
+
 
         {/* ====================================================
             ORDER HISTORY
