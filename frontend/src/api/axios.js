@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "   https://ophitic-deloris-streaky.ngrok-free.dev/api/v1",
+  baseURL: "https://ophitic-deloris-streaky.ngrok-free.app/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
@@ -15,29 +15,19 @@ API.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    console.log(
-      "API REQUEST:",
-      config.method?.toUpperCase(),
-      config.url
-    );
-
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 API.interceptors.response.use(
   (response) => {
-    console.log("API RESPONSE:", response.status, response.data);
     return response;
   },
   (error) => {
-    console.error(
-      "API ERROR:",
-      error.response?.status,
-      error.response?.data || error.message
-    );
-
+    console.error("API ERROR:", error.response || error.message);
     return Promise.reject(error);
   }
 );
