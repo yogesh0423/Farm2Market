@@ -130,10 +130,6 @@ const Marketplace = () => {
       );
 
 
-      // ----------------------------------------------------------
-      // Make sure response is an array
-      // ----------------------------------------------------------
-
       let productList = [];
 
       if (Array.isArray(res.data)) {
@@ -162,10 +158,6 @@ const Marketplace = () => {
         productList = [];
       }
 
-
-      // ----------------------------------------------------------
-      // Normalize backend fields
-      // ----------------------------------------------------------
 
       const normalizedProducts =
         productList.map((item) => {
@@ -256,8 +248,6 @@ const Marketplace = () => {
     setOrderSuccess('');
 
 
-    // User must be logged in
-
     if (!token) {
 
       navigate('/login');
@@ -265,8 +255,6 @@ const Marketplace = () => {
       return;
     }
 
-
-    // Validate product
 
     if (!selectedProduct) {
 
@@ -277,8 +265,6 @@ const Marketplace = () => {
       return;
     }
 
-
-    // Validate quantity
 
     const requestedQuantity =
       parseFloat(quantity);
@@ -309,8 +295,6 @@ const Marketplace = () => {
     }
 
 
-    // Send order to backend
-
     try {
 
       await API.post('/orders', {
@@ -328,8 +312,6 @@ const Marketplace = () => {
         '⚡ Order Executed Successfully!'
       );
 
-
-      // Close modal and refresh products
 
       setTimeout(() => {
 
@@ -991,10 +973,6 @@ const Marketplace = () => {
               </div>
 
 
-              {/* ==================================================
-                  LANGUAGE SELECTOR
-                  ================================================== */}
-
               <LanguageSelector />
 
             </div>
@@ -1044,13 +1022,16 @@ const Marketplace = () => {
                 </span>
 
 
+                {/* ==================================================
+                    FARMER DASHBOARD
+                ================================================== */}
+
                 {user?.role === 'farmer' && (
 
                   <button
+                    type="button"
                     onClick={() =>
-                      navigate(
-                        '/farmer/dashboard'
-                      )
+                      navigate('/farmer/dashboard')
                     }
                     className={`
                       px-3
@@ -1065,7 +1046,7 @@ const Marketplace = () => {
                     `}
                   >
 
-                    Dashboard
+                    Farmer Dashboard
 
                     <ArrowRight
                       className="
@@ -1079,7 +1060,48 @@ const Marketplace = () => {
                 )}
 
 
+                {/* ==================================================
+                    BUYER DASHBOARD
+                ================================================== */}
+
+                {user?.role === 'buyer' && (
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate('/buyer/dashboard')
+                    }
+                    className={`
+                      px-3
+                      py-1.5
+                      rounded-xl
+                      text-xs
+                      font-bold
+                      flex
+                      items-center
+                      gap-1
+                      ${styles.btnPrimary}
+                    `}
+                  >
+
+                    Buyer Dashboard
+
+                    <ArrowRight
+                      className="
+                        w-3
+                        h-3
+                      "
+                    />
+
+                  </button>
+
+                )}
+
+
+                {/* Logout */}
+
                 <button
+                  type="button"
                   onClick={() => {
 
                     logout();
@@ -1180,14 +1202,6 @@ const Marketplace = () => {
           "
         >
 
-          {/* IMPORTANT:
-              Language selector has intentionally been removed
-              from here.
-          */}
-
-
-          {/* Direct Protocol */}
-
           <span
             className="
               inline-flex
@@ -1216,8 +1230,6 @@ const Marketplace = () => {
 
           </span>
 
-
-          {/* Hero Title */}
 
           <h1
             className="
@@ -1251,8 +1263,6 @@ const Marketplace = () => {
           </h1>
 
 
-          {/* Hero Subtitle */}
-
           <p
             className="
               opacity-80
@@ -1267,8 +1277,6 @@ const Marketplace = () => {
 
           </p>
 
-
-          {/* Search */}
 
           <div
             className="
@@ -1358,9 +1366,7 @@ const Marketplace = () => {
         "
       >
 
-        {/* ==================================================
-            CATEGORY FILTERS
-        ================================================== */}
+        {/* CATEGORY FILTERS */}
 
         <div
           className={`
@@ -1427,6 +1433,7 @@ const Marketplace = () => {
 
               <button
                 key={cat.id}
+                type="button"
                 onClick={() =>
                   setActiveCategory(
                     cat.id
@@ -1469,9 +1476,7 @@ const Marketplace = () => {
         </div>
 
 
-        {/* ==================================================
-            PRODUCT GRID
-        ================================================== */}
+        {/* PRODUCT GRID */}
 
         {loading ? (
 
@@ -1565,6 +1570,7 @@ const Marketplace = () => {
 
 
             <button
+              type="button"
               onClick={() => {
 
                 setSearchTerm('');
@@ -1618,7 +1624,7 @@ const Marketplace = () => {
 
                 <div>
 
-                  {/* Product image */}
+                  {/* PRODUCT IMAGE */}
 
                   <div
                     className="
@@ -1690,7 +1696,7 @@ const Marketplace = () => {
                   </div>
 
 
-                  {/* Product details */}
+                  {/* PRODUCT DETAILS */}
 
                   <div className="p-6">
 
@@ -1729,8 +1735,6 @@ const Marketplace = () => {
 
                     </p>
 
-
-                    {/* Price / Stock */}
 
                     <div
                       className={`
@@ -1836,7 +1840,7 @@ const Marketplace = () => {
 
                           {Number(
                             item.quantity_available ||
-                              0
+                            0
                           )}
 
                           kg
@@ -1847,8 +1851,6 @@ const Marketplace = () => {
 
                     </div>
 
-
-                    {/* Location */}
 
                     <p
                       className="
@@ -1878,7 +1880,7 @@ const Marketplace = () => {
                 </div>
 
 
-                {/* Buy button */}
+                {/* BUTTONS */}
 
                 <div
                   className="
@@ -1888,6 +1890,7 @@ const Marketplace = () => {
                 >
 
                   <button
+                    type="button"
                     onClick={() => {
 
                       if (!token) {
@@ -2065,8 +2068,6 @@ const Marketplace = () => {
             `}
           >
 
-            {/* Modal header */}
-
             <div
               className="
                 flex
@@ -2105,7 +2106,7 @@ const Marketplace = () => {
                   ₹
                   {Number(
                     selectedProduct.price_per_kg ||
-                      0
+                    0
                   ).toFixed(2)}
 
                   {' / kg'}
@@ -2116,6 +2117,7 @@ const Marketplace = () => {
 
 
               <button
+                type="button"
                 onClick={() =>
                   setSelectedProduct(null)
                 }
@@ -2132,7 +2134,7 @@ const Marketplace = () => {
             </div>
 
 
-            {/* Error */}
+            {/* ERROR */}
 
             {orderError && (
 
@@ -2154,7 +2156,7 @@ const Marketplace = () => {
             )}
 
 
-            {/* Success */}
+            {/* SUCCESS */}
 
             {orderSuccess && (
 
@@ -2175,8 +2177,6 @@ const Marketplace = () => {
 
             )}
 
-
-            {/* Order form */}
 
             <form
               onSubmit={handlePlaceOrder}
@@ -2232,8 +2232,6 @@ const Marketplace = () => {
               </div>
 
 
-              {/* Order summary */}
-
               <div
                 className={`
                   p-4
@@ -2263,7 +2261,7 @@ const Marketplace = () => {
                     ₹
                     {Number(
                       selectedProduct.price_per_kg ||
-                        0
+                      0
                     ).toFixed(2)}
 
                     {' / kg'}
@@ -2323,7 +2321,7 @@ const Marketplace = () => {
                     {(
                       Number(
                         selectedProduct.price_per_kg ||
-                          0
+                        0
                       ) *
                       (parseFloat(quantity) || 0)
                     ).toFixed(2)}
@@ -2334,8 +2332,6 @@ const Marketplace = () => {
 
               </div>
 
-
-              {/* Buttons */}
 
               <div
                 className="

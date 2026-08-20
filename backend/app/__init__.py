@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -46,12 +46,17 @@ def create_app():
     # ========================================================
     # CORS
     # ========================================================
+    # Frontend is running locally on Vite.
+    # No ngrok is required for local development.
 
     CORS(
         app,
         resources={
             r"/api/*": {
-                "origins": "*"
+                "origins": [
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173"
+                ]
             }
         },
         allow_headers=[
@@ -65,29 +70,9 @@ def create_app():
             "PATCH",
             "DELETE",
             "OPTIONS"
-        ]
+        ],
+        supports_credentials=True
     )
-
-    # ========================================================
-    # FORCE CORS HEADERS ON EVERY API RESPONSE
-    # ========================================================
-
-    @app.after_request
-    def add_cors_headers(response):
-
-        if request.path.startswith("/api/"):
-
-            response.headers["Access-Control-Allow-Origin"] = "*"
-
-            response.headers["Access-Control-Allow-Headers"] = (
-                "Content-Type, Authorization"
-            )
-
-            response.headers["Access-Control-Allow-Methods"] = (
-                "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            )
-
-        return response
 
     # ========================================================
     # HOME / HEALTH CHECK
@@ -129,10 +114,6 @@ def create_app():
     # ========================================================
     # REGISTER ORDERS
     # ========================================================
-
-    # IMPORTANT:
-    # orders.py should NOT have another /api/v1 prefix
-    # if we register it here with /api/v1.
 
     app.register_blueprint(
         order_bp,
