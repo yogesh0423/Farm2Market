@@ -124,10 +124,10 @@ The project aims to reduce dependency on traditional intermediaries while provid
 | 🌾 Product Management | ✅ Completed |
 | 📦 Order Management | ✅ Completed |
 | 💬 Buyer–Farmer Communication | ✅ Completed |
-| 📊 Market Analytics | 🚧 In Progress |
-| 🔍 Product Search | 🚧 In Progress |
-| 🧪 API Testing | ⬜ Planned |
-| 📚 API Documentation | ⬜ Planned |
+| 📊 Market Analytics | ✅ Completed |
+| 🔍 Product Search | ✅ Completed |
+| 🧪 API Testing | 🚧 In Progress |
+| 📚 API Documentation | 🚧 In Progress |
 | 🐳 Docker Deployment | ⬜ Planned |
 | ☁️ Cloud Deployment | ⬜ Planned |
 
