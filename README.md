@@ -120,15 +120,15 @@ The project aims to reduce dependency on traditional intermediaries while provid
 | 🗄️ Database Design | ✅ Completed |
 | 🔐 Authentication & Authorization | ✅ Completed |
 | 👨‍🌾 Farmer Module | ✅ Completed |
-| 🛒 Buyer Module | ✅ Completeds |
-| 🌾 Product Management | 🚧 In Progress |
-| 📦 Order Management | 🚧 In Progress |
-| 💬 Buyer–Farmer Communication | ⬜ Planned |
-| 📊 Market Analytics | ⬜ Planned |
-| 🔍 Product Search | ⬜ Planned |
-| 🧪 API Testing | ⬜ Planned |
-| 📚 API Documentation | ⬜ Planned |
-| 🐳 Docker Deployment | ⬜ Planned |
+| 🛒 Buyer Module | ✅ Completed |
+| 🌾 Product Management | ✅ Completed |
+| 📦 Order Management | ✅ Completed |
+| 💬 Buyer–Farmer Communication | ✅ Completed |
+| 📊 Market Analytics | ✅ Completed |
+| 🔍 Product Search | ✅ Completed |
+| 🧪 API Testing | ✅ Completed |
+| 📚 API Documentation | 🚧 In Progress |
+| 🐳 Docker Deployment | 🚧 In Progress |
 | ☁️ Cloud Deployment | ⬜ Planned |
 
 ---
