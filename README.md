@@ -126,9 +126,9 @@ The project aims to reduce dependency on traditional intermediaries while provid
 | 💬 Buyer–Farmer Communication | ✅ Completed |
 | 📊 Market Analytics | ✅ Completed |
 | 🔍 Product Search | ✅ Completed |
-| 🧪 API Testing | 🚧 In Progress |
+| 🧪 API Testing | ✅ Completed |
 | 📚 API Documentation | 🚧 In Progress |
-| 🐳 Docker Deployment | ⬜ Planned |
+| 🐳 Docker Deployment | 🚧 In Progress |
 | ☁️ Cloud Deployment | ⬜ Planned |
 
 ---
