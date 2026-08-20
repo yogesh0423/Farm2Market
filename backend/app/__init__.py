@@ -24,23 +24,39 @@ def create_app():
 
     app = Flask(__name__)
 
-    # Load configuration
+    # ========================================================
+    # CONFIGURATION
+    # ========================================================
+
     app.config.from_object(Config)
 
-    # Initialize extensions
+    # ========================================================
+    # DATABASE
+    # ========================================================
+
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # ========================================================
+    # JWT
+    # ========================================================
+
     jwt.init_app(app)
 
     # ========================================================
     # CORS
     # ========================================================
+    # Frontend is running locally on Vite.
+    # No ngrok is required for local development.
 
     CORS(
         app,
         resources={
             r"/api/*": {
-                "origins": "*"
+                "origins": [
+                    "http://localhost:5173",
+                    "http://127.0.0.1:5173"
+                ]
             }
         },
         allow_headers=[
@@ -54,7 +70,8 @@ def create_app():
             "PATCH",
             "DELETE",
             "OPTIONS"
-        ]
+        ],
+        supports_credentials=True
     )
 
     # ========================================================
@@ -63,6 +80,7 @@ def create_app():
 
     @app.route("/")
     def index():
+
         return {
             "message": "Farm2Market API is running successfully!"
         }
@@ -76,7 +94,7 @@ def create_app():
     from app.routes.orders import order_bp
 
     # ========================================================
-    # REGISTER BLUEPRINTS
+    # REGISTER AUTH
     # ========================================================
 
     app.register_blueprint(
@@ -84,20 +102,26 @@ def create_app():
         url_prefix="/api/v1"
     )
 
+    # ========================================================
+    # REGISTER PRODUCTS
+    # ========================================================
+
     app.register_blueprint(
         product_bp,
         url_prefix="/api/v1"
     )
 
-    # IMPORTANT:
-    # order_bp already has:
-    # url_prefix='/api/v1/orders'
-    #
-    # Therefore, do NOT add another /api/v1 here.
-    app.register_blueprint(order_bp)
+    # ========================================================
+    # REGISTER ORDERS
+    # ========================================================
+
+    app.register_blueprint(
+        order_bp,
+        url_prefix="/api/v1"
+    )
 
     # ========================================================
-    # PRINT ALL REGISTERED ROUTES
+    # PRINT REGISTERED ROUTES
     # ========================================================
 
     print("\n")
@@ -106,6 +130,7 @@ def create_app():
     print("=" * 70)
 
     for rule in app.url_map.iter_rules():
+
         methods = sorted(
             method
             for method in rule.methods
@@ -113,7 +138,7 @@ def create_app():
         )
 
         print(
-            f"{str(rule):45} "
+            f"{str(rule):50} "
             f"{str(methods):25} "
             f"{rule.endpoint}"
         )

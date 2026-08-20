@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import API from '../api/axios';
@@ -34,54 +34,136 @@ const BuyerDashboard = () => {
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const [conversations, setConversations] =
-    useState([]);
+  const [conversations, setConversations] = useState([]);
 
-  // Same theme system as Farmer Dashboard
   const [theme, setTheme] = useState('cyber');
 
   // ============================================================
   // FETCH BUYER ORDERS
   // ============================================================
 
-  useEffect(() => {
-    fetchBuyerOrders();
-    loadConversations();
-  }, []);
-
-  const loadConversations = () => {
-    setConversations(getConversations());
-  };
-
-  const fetchBuyerOrders = async () => {
+  const fetchBuyerOrders = useCallback(async (showFullLoader = false) => {
     try {
-      setLoading(true);
+      if (showFullLoader) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
       setError('');
 
       const response = await API.get('/orders/my-orders');
 
-      setOrders(
-        response.data?.orders ||
-        response.data ||
-        []
+      console.log(
+        'BUYER ORDERS RESPONSE:',
+        response.data
       );
+
+      let orderList = [];
+
+      if (Array.isArray(response.data)) {
+        orderList = response.data;
+      } else if (Array.isArray(response.data?.orders)) {
+        orderList = response.data.orders;
+      } else if (Array.isArray(response.data?.data)) {
+        orderList = response.data.data;
+      }
+
+      console.log(
+        'BUYER ORDERS:',
+        orderList
+      );
+
+      setOrders(orderList);
 
     } catch (err) {
       console.error(
         'Error fetching buyer orders:',
-        err
+        err.response?.data || err
       );
 
       setError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
         'Failed to load order history. Please try again.'
       );
 
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  // ============================================================
+  // LOAD CONVERSATIONS
+  // ============================================================
+
+  const loadConversations = useCallback(() => {
+    try {
+      setConversations(getConversations());
+    } catch (err) {
+      console.error(
+        'Error loading conversations:',
+        err
+      );
+
+      setConversations([]);
+    }
+  }, []);
+
+  // ============================================================
+  // INITIAL LOAD + AUTO REFRESH
+  // ============================================================
+
+  useEffect(() => {
+    // Initial load
+    fetchBuyerOrders(true);
+    loadConversations();
+
+    // Automatically check backend every 5 seconds.
+    // This allows the buyer dashboard to see when
+    // the farmer changes Pending -> Confirmed.
+    const orderRefreshInterval = setInterval(() => {
+      fetchBuyerOrders(false);
+    }, 5000);
+
+    // Refresh immediately when buyer returns to this tab.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBuyerOrders(false);
+        loadConversations();
+      }
+    };
+
+    document.addEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+
+    return () => {
+      clearInterval(orderRefreshInterval);
+
+      document.removeEventListener(
+        'visibilitychange',
+        handleVisibilityChange
+      );
+    };
+  }, [
+    fetchBuyerOrders,
+    loadConversations
+  ]);
+
+  // ============================================================
+  // MANUAL REFRESH
+  // ============================================================
+
+  const handleRefresh = () => {
+    fetchBuyerOrders(false);
+    loadConversations();
   };
 
   // ============================================================
@@ -151,7 +233,7 @@ const BuyerDashboard = () => {
       case 'processing':
       case 'confirmed':
         return {
-          label: status,
+          label: status || 'Confirmed',
           className:
             'bg-blue-500/10 text-blue-400 border-blue-500/30',
           icon: (
@@ -162,7 +244,7 @@ const BuyerDashboard = () => {
       case 'cancelled':
       case 'rejected':
         return {
-          label: status,
+          label: status || 'Cancelled',
           className:
             'bg-rose-500/10 text-rose-400 border-rose-500/30',
           icon: (
@@ -366,8 +448,6 @@ const BuyerDashboard = () => {
           "
         >
 
-          {/* BRAND */}
-
           <div className="flex items-center space-x-3">
 
             <div
@@ -452,11 +532,7 @@ const BuyerDashboard = () => {
 
           </div>
 
-          {/* HEADER CONTROLS */}
-
           <div className="flex items-center gap-2 sm:gap-3">
-
-            {/* THEME SWITCHER */}
 
             <div
               className="
@@ -530,8 +606,6 @@ const BuyerDashboard = () => {
 
             </div>
 
-            {/* MARKETPLACE */}
-
             <Link
               to="/"
               className="
@@ -576,9 +650,7 @@ const BuyerDashboard = () => {
         "
       >
 
-        {/* ====================================================
-            PAGE INTRO
-        ==================================================== */}
+        {/* PAGE INTRO */}
 
         <div
           className="
@@ -621,7 +693,8 @@ const BuyerDashboard = () => {
           </div>
 
           <button
-            onClick={fetchBuyerOrders}
+            onClick={handleRefresh}
+            disabled={refreshing}
             className={`
               self-start
               md:self-auto
@@ -636,6 +709,7 @@ const BuyerDashboard = () => {
               transition
               border
               border-emerald-500/30
+              disabled:opacity-60
               ${styles.btnPrimary}
             `}
           >
@@ -644,19 +718,19 @@ const BuyerDashboard = () => {
               className={`
                 w-3.5
                 h-3.5
-                ${loading ? 'animate-spin' : ''}
+                ${refreshing ? 'animate-spin' : ''}
               `}
             />
 
-            Refresh Orders
+            {refreshing
+              ? 'Checking...'
+              : 'Refresh Orders'}
 
           </button>
 
         </div>
 
-        {/* ====================================================
-            STATS
-        ==================================================== */}
+        {/* STATS */}
 
         <div
           className="
@@ -667,8 +741,6 @@ const BuyerDashboard = () => {
             mb-8
           "
         >
-
-          {/* TOTAL ORDERS */}
 
           <div
             className={`
@@ -722,8 +794,6 @@ const BuyerDashboard = () => {
 
           </div>
 
-          {/* ACTIVE ORDERS */}
-
           <div
             className={`
               p-5
@@ -775,8 +845,6 @@ const BuyerDashboard = () => {
             </span>
 
           </div>
-
-          {/* TOTAL SPENT */}
 
           <div
             className={`
@@ -838,9 +906,7 @@ const BuyerDashboard = () => {
 
         </div>
 
-        {/* ====================================================
-            MY CONVERSATIONS
-        ==================================================== */}
+        {/* CONVERSATIONS */}
 
         <div
           className={`
@@ -1021,82 +1087,89 @@ const BuyerDashboard = () => {
 
                 return (
 
-                <div
-                  key={conversation.id}
-                  className={`
-                    w-full
-                    text-left
-                    p-4
-                    rounded-2xl
-                    border
-                    transition
-                    ${styles.statBg}
-                    ${styles.rowHover}
-                  `}
-                >
+                  <div
+                    key={conversation.id}
+                    className={`
+                      w-full
+                      text-left
+                      p-4
+                      rounded-2xl
+                      border
+                      transition
+                      ${styles.statBg}
+                      ${styles.rowHover}
+                    `}
+                  >
 
-                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
 
-                    <div
-                      className="
-                        w-10
-                        h-10
-                        rounded-xl
-                        bg-emerald-500/10
-                        flex
-                        items-center
-                        justify-center
-                        shrink-0
-                      "
-                    >
-
-                      <MessageCircle
+                      <div
                         className="
-                          w-4
-                          h-4
-                          text-emerald-400
+                          w-10
+                          h-10
+                          rounded-xl
+                          bg-emerald-500/10
+                          flex
+                          items-center
+                          justify-center
+                          shrink-0
                         "
-                      />
+                      >
 
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-
-                      <div className="flex items-center justify-between gap-3">
-
-                        <p className="text-sm font-bold truncate">
-                          {conversation.farmerName}
-                        </p>
-
-                        <span
-                          className={`
-                            text-[10px]
-                            ${styles.mutedText}
-                          `}
-                        >
-                          {conversation.messages?.length || 0} msg
-                        </span>
+                        <MessageCircle
+                          className="
+                            w-4
+                            h-4
+                            text-emerald-400
+                          "
+                        />
 
                       </div>
 
-                      <p
-                        className={`
-                          text-xs
-                          mt-1
-                          truncate
-                          ${styles.mutedText}
-                        `}
-                      >
-                        {conversation.productTitle}
-                        {' · '}
-                        {lastMessage?.text || 'Conversation started.'}
-                      </p>
+                      <div className="min-w-0 flex-1">
+
+                        <div
+                          className="
+                            flex
+                            items-center
+                            justify-between
+                            gap-3
+                          "
+                        >
+
+                          <p className="text-sm font-bold truncate">
+                            {conversation.farmerName}
+                          </p>
+
+                          <span
+                            className={`
+                              text-[10px]
+                              ${styles.mutedText}
+                            `}
+                          >
+                            {conversation.messages?.length || 0} msg
+                          </span>
+
+                        </div>
+
+                        <p
+                          className={`
+                            text-xs
+                            mt-1
+                            truncate
+                            ${styles.mutedText}
+                          `}
+                        >
+                          {conversation.productTitle}
+                          {' · '}
+                          {lastMessage?.text || 'Conversation started.'}
+                        </p>
+
+                      </div>
 
                     </div>
 
                   </div>
-
-                </div>
 
                 );
 
@@ -1107,7 +1180,6 @@ const BuyerDashboard = () => {
           )}
 
         </div>
-
 
         {/* ====================================================
             ORDER HISTORY
@@ -1123,8 +1195,6 @@ const BuyerDashboard = () => {
             ${styles.cardBg}
           `}
         >
-
-          {/* HEADER */}
 
           <div
             className="
@@ -1173,8 +1243,6 @@ const BuyerDashboard = () => {
               </p>
 
             </div>
-
-            {/* FILTERS */}
 
             <div
               className="
@@ -1251,7 +1319,9 @@ const BuyerDashboard = () => {
               </span>
 
               <button
-                onClick={fetchBuyerOrders}
+                onClick={() =>
+                  fetchBuyerOrders(false)
+                }
                 className="
                   text-xs
                   font-bold
@@ -1266,9 +1336,7 @@ const BuyerDashboard = () => {
 
           )}
 
-          {/* ==================================================
-              LOADING
-          ================================================== */}
+          {/* LOADING */}
 
           {loading ? (
 
@@ -1309,10 +1377,6 @@ const BuyerDashboard = () => {
             </div>
 
           ) : filteredOrders.length === 0 ? (
-
-            /* ==================================================
-                EMPTY STATE
-            ================================================== */
 
             <div
               className="
@@ -1384,10 +1448,6 @@ const BuyerDashboard = () => {
 
           ) : (
 
-            /* ==================================================
-                ORDER TABLE
-            ================================================== */
-
             <div className="overflow-x-auto">
 
               <table className="w-full text-left border-collapse">
@@ -1445,9 +1505,7 @@ const BuyerDashboard = () => {
                   {filteredOrders.map((order) => {
 
                     const status =
-                      getStatusConfig(
-                        order.status
-                      );
+                      getStatusConfig(order.status);
 
                     return (
 
@@ -1458,8 +1516,6 @@ const BuyerDashboard = () => {
                           ${styles.rowHover}
                         `}
                       >
-
-                        {/* ORDER ID */}
 
                         <td
                           className="
@@ -1477,8 +1533,6 @@ const BuyerDashboard = () => {
                             order.order_id}
                         </td>
 
-                        {/* PRODUCT */}
-
                         <td
                           className="
                             py-4
@@ -1488,12 +1542,11 @@ const BuyerDashboard = () => {
                         >
 
                           {order.product_name ||
+                            order.product_title ||
                             order.product?.name ||
                             'Fresh Produce'}
 
                         </td>
-
-                        {/* QUANTITY */}
 
                         <td
                           className="
@@ -1510,8 +1563,6 @@ const BuyerDashboard = () => {
                           {order.unit || 'kg'}
 
                         </td>
-
-                        {/* TOTAL */}
 
                         <td
                           className="
@@ -1531,8 +1582,6 @@ const BuyerDashboard = () => {
                           ).toFixed(2)}
 
                         </td>
-
-                        {/* STATUS */}
 
                         <td className="py-4 px-4">
 
@@ -1560,8 +1609,6 @@ const BuyerDashboard = () => {
                           </span>
 
                         </td>
-
-                        {/* DATE */}
 
                         <td
                           className={`

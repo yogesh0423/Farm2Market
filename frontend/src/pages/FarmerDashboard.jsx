@@ -1,3 +1,5 @@
+
+
 import React, {
   useState,
   useEffect,
@@ -75,7 +77,8 @@ const FarmerDashboard = () => {
       price_per_kg: '',
       quantity_available: '',
       location: '',
-      image_url: ''
+      image_url: '',
+      description: ''
     });
 
   const [showAddModal, setShowAddModal] =
@@ -169,6 +172,43 @@ const FarmerDashboard = () => {
 
 
   // ============================================================
+  // AUTO-REFRESH ORDERS
+  // ============================================================
+
+  useEffect(() => {
+
+    if (!user?.id) return;
+
+    const interval = setInterval(async () => {
+
+      try {
+
+        const response =
+          await API.get('/farmer/orders');
+
+        setOrders(
+          Array.isArray(response.data)
+            ? response.data
+            : response.data?.orders || []
+        );
+
+      } catch (error) {
+
+        console.error(
+          'Failed to refresh farmer orders:',
+          error
+        );
+
+      }
+
+    }, 5000);
+
+    return () => clearInterval(interval);
+
+  }, [user?.id]);
+
+
+  // ============================================================
   // LOAD CONVERSATIONS
   // ============================================================
 
@@ -205,19 +245,13 @@ const FarmerDashboard = () => {
     try {
 
       await API.post('/products', {
-
-        ...newProduct,
-
-        price_per_kg:
-          parseFloat(
-            newProduct.price_per_kg
-          ),
-
-        quantity_available:
-          parseFloat(
-            newProduct.quantity_available
-          )
-
+        title: newProduct.title,
+        category: newProduct.category,
+        price_per_unit: parseFloat(newProduct.price_per_kg),
+        unit: 'kg',
+        available_quantity: parseFloat(newProduct.quantity_available),
+        image_url: newProduct.image_url || '',
+        description: newProduct.description || ''
       });
 
       setFormSuccess(
@@ -236,7 +270,8 @@ const FarmerDashboard = () => {
           price_per_kg: '',
           quantity_available: '',
           location: '',
-          image_url: ''
+          image_url: '',
+          description: ''
         });
 
         fetchDashboardData();
@@ -301,7 +336,25 @@ const FarmerDashboard = () => {
     setEditSuccess('');
 
     setEditingProduct({
-      ...product
+      ...product,
+      price_per_unit:
+        product.price_per_unit ??
+        product.pricePerUnit ??
+        product.price ??
+        product.price_per_kg ??
+        0,
+      available_quantity:
+        product.available_quantity ??
+        product.availableQuantity ??
+        product.stock ??
+        product.quantity_available ??
+        0,
+      image_url:
+        product.image_url ??
+        product.imageUrl ??
+        '',
+      description:
+        product.description ?? ''
     });
 
   };
@@ -339,29 +392,23 @@ const FarmerDashboard = () => {
     try {
 
       const updatedProduct = {
-
-        title:
-          editingProduct.title,
-
-        category:
-          editingProduct.category,
-
-        price_per_kg:
-          parseFloat(
-            editingProduct.price_per_kg
-          ),
-
-        quantity_available:
-          parseFloat(
-            editingProduct.quantity_available
-          ),
-
-        location:
-          editingProduct.location,
-
-        image_url:
-          editingProduct.image_url || ''
-
+        title: editingProduct.title,
+        category: editingProduct.category,
+        price_per_unit: parseFloat(
+          editingProduct.price_per_unit ??
+          editingProduct.price_per_kg ??
+          editingProduct.price ??
+          0
+        ),
+        unit: editingProduct.unit || 'kg',
+        available_quantity: parseFloat(
+          editingProduct.available_quantity ??
+          editingProduct.quantity_available ??
+          editingProduct.stock ??
+          0
+        ),
+        image_url: editingProduct.image_url || '',
+        description: editingProduct.description || ''
       };
 
       await API.put(
@@ -405,24 +452,132 @@ const FarmerDashboard = () => {
 
 
   // ============================================================
+  // PRODUCT FIELD HELPERS
+  // ============================================================
+
+  // Backend canonical fields:
+  // price_per_unit, available_quantity, image_url.
+  // Fallbacks keep older product records compatible.
+
+  const getProductPrice = (product) =>
+    Number(
+      product?.price_per_unit ??
+      product?.pricePerUnit ??
+      product?.price ??
+      product?.price_per_kg ??
+      0
+    );
+
+  const getProductQuantity = (product) =>
+    Number(
+      product?.available_quantity ??
+      product?.availableQuantity ??
+      product?.stock ??
+      product?.quantity_available ??
+      0
+    );
+
+  const getProductLocation = (product) =>
+    product?.farmer_location ||
+    product?.location ||
+    user?.location ||
+    'Location not specified';
+
+  const getProductImage = (product) =>
+    product?.image_url ||
+    product?.imageUrl ||
+    '';
+
+
+  // ============================================================
   // ORDER STATUS
   // ============================================================
 
-  const handleOrderStatusChange = (
+  const [updatingOrderId, setUpdatingOrderId] =
+    useState(null);
+
+  const [orderActionError, setOrderActionError] =
+    useState('');
+
+  const handleOrderStatusChange = async (
     orderId,
     newStatus
   ) => {
 
-    setOrders((currentOrders) =>
-      currentOrders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              status: newStatus
-            }
-          : order
-      )
-    );
+    if (updatingOrderId) return;
+
+    setUpdatingOrderId(orderId);
+    setOrderActionError('');
+
+    try {
+
+      console.log(
+        `UPDATING ORDER #${orderId} -> ${newStatus}`
+      );
+
+      // IMPORTANT:
+      // Persist the status in the Flask/PostgreSQL backend.
+      const response = await API.put(
+        `/orders/${orderId}/status`,
+        {
+          status: newStatus
+        }
+      );
+
+      console.log(
+        'ORDER STATUS UPDATE RESPONSE:',
+        response.data
+      );
+
+      const returnedOrder =
+        response.data?.order || response.data;
+
+      const updatedStatus =
+        returnedOrder?.status || newStatus;
+
+      // Update the screen immediately.
+      setOrders((currentOrders) =>
+        currentOrders.map((order) =>
+          Number(order.id) === Number(orderId)
+            ? {
+                ...order,
+                ...(returnedOrder &&
+                typeof returnedOrder === 'object'
+                  ? returnedOrder
+                  : {}),
+                status: updatedStatus
+              }
+            : order
+        )
+      );
+
+      // Re-fetch from the database to verify
+      // that PostgreSQL contains the new status.
+      await fetchDashboardData();
+
+    } catch (err) {
+
+      console.error(
+        'ORDER STATUS UPDATE ERROR:',
+        err
+      );
+
+      console.error(
+        'ORDER STATUS UPDATE RESPONSE:',
+        err.response?.data
+      );
+
+      setOrderActionError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        `Failed to update order #${orderId}.`
+      );
+
+    } finally {
+
+      setUpdatingOrderId(null);
+
+    }
 
   };
 
@@ -626,7 +781,9 @@ const getOrderStatus = (status) => {
         sum +
         (
           Number(
-            order.quantity_kg
+            order.quantity_kg ??
+            order.quantity ??
+            0
           ) || 0
         ),
       0
@@ -2437,11 +2594,11 @@ const getOrderStatus = (status) => {
                         "
                       >
 
-                        {product.image_url ? (
+                        {getProductImage(product) ? (
 
                           <img
                             src={
-                              product.image_url
+                              getProductImage(product)
                             }
                             alt={
                               product.title
@@ -2526,11 +2683,8 @@ const getOrderStatus = (status) => {
                             "
                           >
                             ₹
-                            {Number(
-                              product.price_per_kg ||
-                              0
-                            ).toFixed(2)}
-                            /kg
+                            {getProductPrice(product).toFixed(2)}
+                            /{product.unit || 'kg'}
                           </span>
 
                         </div>
@@ -2561,11 +2715,8 @@ const getOrderStatus = (status) => {
                               "
                             />
 
-                            {Number(
-                              product.quantity_available ||
-                              0
-                            )}
-                            {' '}kg available
+                            {getProductQuantity(product)}
+                            {' '}{product.unit || 'kg'} available
 
                           </p>
 
@@ -2586,8 +2737,7 @@ const getOrderStatus = (status) => {
                               "
                             />
 
-                            {product.location ||
-                              'Location not specified'}
+                            {getProductLocation(product)}
 
                           </p>
 
@@ -2690,30 +2840,79 @@ const getOrderStatus = (status) => {
             <div
               className="
                 mb-5
+                flex
+                flex-col
+                sm:flex-row
+                sm:items-end
+                sm:justify-between
+                gap-3
               "
             >
 
-              <h2
-                className="
-                  text-xl
-                  font-black
-                "
-              >
-                Direct Orders
-              </h2>
+              <div>
 
-              <p
+                <h2
+                  className="
+                    text-xl
+                    font-black
+                  "
+                >
+                  Direct Orders
+                </h2>
+
+                <p
+                  className="
+                    text-xs
+                    opacity-50
+                    mt-1
+                  "
+                >
+                  Manage incoming orders from buyers. Status is saved to the
+                  PostgreSQL backend and refreshed automatically.
+                </p>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={fetchDashboardData}
+                disabled={loading || updatingOrderId !== null}
                 className="
+                  px-4
+                  py-2
+                  rounded-xl
+                  border
+                  border-emerald-500/30
+                  text-emerald-400
                   text-xs
-                  opacity-50
-                  mt-1
+                  font-bold
+                  hover:bg-emerald-500/10
+                  disabled:opacity-50
+                  transition
                 "
               >
-                Manage incoming orders from buyers.
-              </p>
+                Refresh Orders
+              </button>
 
             </div>
 
+
+            {orderActionError && (
+              <div
+                className="
+                  mb-4
+                  p-3
+                  rounded-xl
+                  border
+                  border-rose-500/30
+                  bg-rose-500/10
+                  text-rose-400
+                  text-xs
+                "
+              >
+                {orderActionError}
+              </div>
+            )}
 
             {orders.length === 0 ? (
 
@@ -2890,7 +3089,8 @@ const getOrderStatus = (status) => {
                                 "
                               >
                                 {Number(
-                                  ord.quantity_kg ||
+                                  ord.quantity_kg ??
+                                  ord.quantity ??
                                   0
                                 )}
                                 {' '}kg
@@ -2977,6 +3177,9 @@ const getOrderStatus = (status) => {
                               >
 
                                 <button
+                                  disabled={
+                                    updatingOrderId === ord.id
+                                  }
                                   onClick={() =>
                                     handleOrderStatusChange(
                                       ord.id,
@@ -2990,6 +3193,8 @@ const getOrderStatus = (status) => {
                                     bg-emerald-500
                                     hover:bg-emerald-400
                                     text-slate-950
+                                    disabled:opacity-50
+                                    disabled:cursor-not-allowed
                                     text-xs
                                     font-black
                                     transition
@@ -3006,12 +3211,17 @@ const getOrderStatus = (status) => {
                                     "
                                   />
 
-                                  Confirm Order
+                                  {updatingOrderId === ord.id
+                                    ? 'Updating...'
+                                    : 'Confirm Order'}
 
                                 </button>
 
 
                                 <button
+                                  disabled={
+                                    updatingOrderId === ord.id
+                                  }
                                   onClick={() =>
                                     handleOrderStatusChange(
                                       ord.id,
@@ -3025,13 +3235,17 @@ const getOrderStatus = (status) => {
                                     border
                                     border-rose-500/30
                                     text-rose-400
+                                    disabled:opacity-50
+                                    disabled:cursor-not-allowed
                                     hover:bg-rose-500/10
                                     text-xs
                                     font-bold
                                     transition
                                   "
                                 >
-                                  Reject Order
+                                  {updatingOrderId === ord.id
+                                    ? 'Updating...'
+                                    : 'Reject Order'}
                                 </button>
 
                               </div>
@@ -3836,13 +4050,15 @@ const getOrderStatus = (status) => {
                     min="0"
                     step="0.01"
                     value={
-                      editingProduct.price_per_kg ||
+                      editingProduct.price_per_unit ??
+                      editingProduct.price_per_kg ??
+                      editingProduct.price ??
                       ''
                     }
                     onChange={(e) =>
                       setEditingProduct({
                         ...editingProduct,
-                        price_per_kg:
+                        price_per_unit:
                           e.target.value
                       })
                     }
@@ -3885,13 +4101,15 @@ const getOrderStatus = (status) => {
                   min="0"
                   step="0.01"
                   value={
-                    editingProduct.quantity_available ||
+                    editingProduct.available_quantity ??
+                    editingProduct.quantity_available ??
+                    editingProduct.stock ??
                     ''
                   }
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
-                      quantity_available:
+                      available_quantity:
                         e.target.value
                     })
                   }
@@ -3930,13 +4148,15 @@ const getOrderStatus = (status) => {
                 <input
                   type="text"
                   value={
+                    editingProduct.farmer_location ||
                     editingProduct.location ||
+                    user?.location ||
                     ''
                   }
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
-                      location:
+                      farmer_location:
                         e.target.value
                     })
                   }
